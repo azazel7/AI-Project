@@ -31,33 +31,57 @@ class Engine:
             if not self.is_on_board(move.pos_rec) or self.cards[move.pos_rec] == 0: #Card to move is outside of the map or there is no card
                 return False
             card_to_rec = self.cards[move.pos_rec]
+            if move.pos_rec == move.pos and card_to_rec == move.type:
+                return False
             if card_to_rec in {1, 3, 5, 7}: # Horizontal recycling
-                #The two cells below the move *and* the two cells above the recycling card have to be *not* be empty
+                #The two cells above the recycling card have to be empty
                 empty_pos = np.array([(move.pos_rec[0], move.pos_rec[1]+1), (move.pos_rec[0]+1, move.pos_rec[1]+1)])
-            elif card_to_rec in {2, 4, 6, 8}: # vertical recycling and vertical move
+                recycling_pos = np.array([move.pos_rec, (move.pos_rec[0]+1, move.pos_rec[1])])
+            elif card_to_rec in {2, 4, 6, 8}: # vertical recycling
                 empty_pos = np.array([(move.pos_rec[0], move.pos_rec[1]+2)])
+                recycling_pos = np.array([move.pos_rec, (move.pos_rec[0], move.pos_rec[1]+1)])
         else:
             empty_pos = np.array([])
+            recycling_pos = np.array([])
 
         # From now on, the empty_pos array contains all position that should be either empty or outside the board (to recycle).
         # no_empty_pos contains all positions that should be either filled or outside the board (to place above)
         # placement_pos is where the card will be placed, thus, all position in this array should be empty and on the board.
+        # recycling_pos contains the current position of the card to recycle
 
         for i in range(placement_pos.shape[0]):
             pos = tuple(placement_pos[i])
-            if not self.is_on_board(pos) or self.board[pos] != 0:
+            #If we recycle a card partially on itself, we need to consider the recycled cells as empty
+            if not self.is_on_board(pos) or (self.board[pos] != 0 and pos not in recycling_pos):
                 return False
         for i in range(no_empty_pos.shape[0]):
             pos = tuple(no_empty_pos[i])
-            if self.is_on_board(pos) and self.board[pos] == 0: #on board and empty
+            on_board = self.is_on_board(pos)
+            is_empty = self.board[pos] == 0
+            #If we recycle a card to put it above, we need to consider the cells recycled as empty
+            if on_board and (is_empty or pos in recycling_pos): #on board and empty
                 return False
         for i in range(empty_pos.shape[0]):
             pos = tuple(empty_pos[i])
-            if self.is_on_board(pos) and self.board[pos] != 0: #on board and empty
+            if self.is_on_board(pos) and self.board[pos] != 0: #on board and not empty
                 return False
         #TODO: when recycling we should not undo the last move of our opponent
 
         # Now we've checked the move, let's do it
+        if move.recycling:
+            #Don't use recycling_pos because I intend to separate the function in two later
+            pos1 = move.pos_rec
+            if self.cards[move.pos_rec] in {1, 3, 5, 7}:
+                pos2 = (move.pos_rec[0]+1, move.pos_rec[1])
+            elif self.cards[move.pos_rec] in {2, 4, 6, 8}:
+                pos2 = (move.pos_rec[0], move.pos_rec[1]+1)
+            # Remove cards from
+            self.cards[pos1] = 0
+            self.board[pos1] = 0
+            self.board[pos2] = 0
+        else:
+            self.card_count -= 1
+
         if move.type in {1, 3, 5, 7}: # horizontal move
             pos1 = move.pos
             pos2 = (move.pos[0]+1, move.pos[1])
@@ -79,18 +103,6 @@ class Engine:
             self.board[pos2] = 2
 
         self.cards[pos1] = move.type
-        if move.recycling:
-            pos1 = move.pos_rec
-            if self.cards[move.pos_rec] in {1, 3, 5, 7}:
-                pos2 = (move.pos_rec[0]+1, move.pos_rec[1])
-            elif self.cards[move.pos_rec] in {2, 4, 6, 8}:
-                pos2 = (move.pos_rec[0], move.pos_rec[1]+1)
-            # Remove cards from
-            self.cards[pos1] = 0
-            self.board[pos1] = 0
-            self.board[pos2] = 0
-        else:
-            self.card_count -= 1
         # TODO keep a list of move done so far
         return True
 
