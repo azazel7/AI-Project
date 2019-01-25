@@ -1,5 +1,5 @@
-import sys
 import numpy as np
+from move import Move
 
 class Engine:
     def __init__(self, width=8, height=12, card_count=24, max_turn=60):
@@ -93,6 +93,7 @@ class Engine:
             self.card_count -= 1
         # TODO keep a list of move done so far
         return True
+
     def is_on_board(self, pos):
         if pos[0] < 0 or pos[0] > self.width:
             return False
@@ -126,18 +127,29 @@ class Engine:
                     line = line + bg_white + fg_black + "x" + bg_default + fg_default
                 elif self.board[pos] == 4:
                     line = line + bg_white + fg_black + "o" + bg_default + fg_default
-            sys.stdout.write(line + "\n")
-            # print(line)
+            print(line)
 
+    def isWinning(self):
+        '''Return who is winning.
+        -1: nobody
+         0: player 1
+         1: player 2
+         2: tie
+        '''
+        return -1
     def play(self, player1, player2):
         self.ais = [player1, player2]
 
         current_player = 0
         current_turn = 0
         while True:
-            move = self.ais[current_player].play(self)
+            move = self.ais[current_player].play(self) #Call the player function
             print("Player ", current_player, ": ", move)
             legal_move = self.execute(move)
             if not legal_move:
                 continue
             current_player = (current_player+1)%2
+
+            who_win = self.isWinning()
+            if who_win >= 0:
+                return who_win

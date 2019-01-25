@@ -17,3 +17,4 @@ print(val)
 print(engine.board)
 engine.print()
 print(engine.board)
+# export PYTHONPATH=$PYTHONPATH:`pwd`/src
