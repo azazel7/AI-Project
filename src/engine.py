@@ -187,6 +187,36 @@ class Engine:
                 return False
         #TODO: when recycling we should not undo the last move of our opponent
         return True
+    def available_moves(self):
+        if self.card_count == 0:
+            return self.available_recycling()
+        else:
+            return self.available_regular()
+    def available_recycling(self):
+        return []
+    def available_regular(self):
+        regular_moves = []
+        shape = self.board.shape
+        for x in range(shape[0]):
+            #Find the first no-empty cell of the column
+            pos = (x,0)
+            for y in range(shape[1]-1, -1, -1):
+                if self.board[(x,y)] != 0:
+                    pos = (x,y+1)
+            #If the pos we found is not even on the board, it means the column is full
+            if not self.is_on_board(pos):
+                continue
+            #For all type of position, we check if its a legal move and add it to the list if so.
+            for t in range(1, 9):
+                move = Move()
+                move.recycling = False
+                move.type = t
+                move.pos = pos
+                legal = self.check_move(move)
+                if legal:
+                    regular_moves.append(move)
+        return regular_moves
+
     def is_on_board(self, pos):
         if pos[0] < 0 or pos[0] > self.width:
             return False
