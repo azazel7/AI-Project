@@ -143,7 +143,7 @@ def test_move_empty():
     assert(val == False)
 
 def test_move_right3():
-    #Add a card then a vertical card on top of it
+    '''Add a card then a vertical card on top of it'''
     engine = Engine()
     move = Move()
     move.recycling = False
@@ -157,6 +157,7 @@ def test_move_right3():
     assert(val == True)
 
 def test_move_right2():
+    '''Add a card then add another card somewhere else.'''
     engine = Engine()
     move = Move()
     move.recycling = False

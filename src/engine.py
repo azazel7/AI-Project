@@ -220,13 +220,73 @@ class Engine:
                 elif self.board[pos] == 4:
                     line = line + bg_white + fg_black + "o" + bg_default + fg_default
             print(line)
-    def isWinning(self):
+    def is_winning_line(self, line):
+        '''Return who made a serie on this line.
+        -1: nobody
+         0: player 1
+         1: player 2
+         2: both
+        '''
+        victory = [False, False]
+        #Initializing with the first element of the line
+        prev_val = int(self.board[line[0]])
+        if prev_val != 0:
+            count = [1, 1]
+        else:
+            count = [0, 0]
+
+        #Start the loop over the rest of the line
+        for coor in line[1:]:
+            val = int(self.board[coor])
+            if val == 0:
+                count = [0, 0]
+            elif prev_val == 0:
+                count = [1, 1]
+            else:
+                #For both color and dot, check if the previous value match the current value so the serie keep going.
+                #For instance, if prev_val and val indicate the same color or the same type of dot.
+                for i in range(2):
+                    if self.matching_cells[i][prev_val-1][val-1]:
+                        count[i] += 1
+                    else:
+                        count[i] = 1
+                    #NOTE: Don't break if one is winning because it may be a double win
+                    victory[i] = victory[i] or (count[i] >= self.win_length)
+            prev_val = val
+
+        if victory[0] and victory[1]:
+            return 2
+        if victory[0]:
+            return 0
+        if victory[1]:
+            return 1
+        return -1
+    def is_winning(self):
         '''Return who is winning.
         -1: nobody
          0: player 1
          1: player 2
          2: tie
         '''
+        #TODO improve the search with a maximum high
+        victory = [False, False]
+        #Loop through all the lines. Don't break soon, because we need to check if it's a move with double victory
+        for line in self.all_lines:
+            val = self.is_winning_line(line)
+            if val != -1:
+                if val != 2:
+                    victory[val] = True
+                else:
+                    victory = [True, True]
+            if victory[0] and victory[1]:
+                return (len(self.previous_moves)-1)%2
+
+        if victory[0]:
+            return 0
+        elif victory[1]:
+            return 1
+        if len(self.previous_moves) > 60:
+            return 2
         return -1
     def play(self, player1, player2):
         self.ais = [player1, player2]
@@ -241,6 +301,6 @@ class Engine:
                 continue
             current_player = (current_player+1)%2
 
-            who_win = self.isWinning()
+            who_win = self.is_winning()
             if who_win >= 0:
                 return who_win
