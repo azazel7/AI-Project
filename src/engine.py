@@ -212,15 +212,16 @@ class Engine:
                 move.recycling = False
                 move.type = t
                 move.pos = pos
+                print(move)
                 legal = self.check_move(move)
                 if legal:
                     regular_moves.append(move)
         return regular_moves
 
     def is_on_board(self, pos):
-        if pos[0] < 0 or pos[0] > self.width:
+        if pos[0] < 0 or pos[0] >= self.width:
             return False
-        if pos[1] < 0 or pos[1] > self.height:
+        if pos[1] < 0 or pos[1] >= self.height:
             return False
         return True
     def print(self):
