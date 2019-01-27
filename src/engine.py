@@ -200,7 +200,6 @@ class Engine:
         else:
             return self.available_regular()
     def available_recycling(self):
-        print("Recycling move!!!")
         shape = self.board.shape
         all_moves = []
         for x in range(shape[0]):
@@ -384,9 +383,9 @@ class Engine:
             move = self.ais[current_player].play(self) #Call the player function
             # print("Player ", current_player, ": ")
             # print(move)
-            print("Turn: ", current_turn," ",self.card_count)
+            # print("Turn: ", current_turn," ",self.card_count)
             legal_move = self.execute(move)
-            self.print()
+            # self.print()
             if not legal_move:
                 continue
             current_player = (current_player+1)%2
