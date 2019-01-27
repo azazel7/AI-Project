@@ -169,17 +169,24 @@ class Engine:
         # placement_pos is where the card will be placed, thus, all position in this array should be empty and on the board.
         # recycling_pos contains the current position of the card to recycle
 
+        #Create the lambda to check the recycling position
+        if move.recycling:
+            l_in_rec = lambda p: np.any(np.all(recycling_pos == p, axis=1))
+        else:
+            l_in_rec = lambda p: False
+
+	#Check is placement_pos are available
         for i in range(placement_pos.shape[0]):
             pos = tuple(placement_pos[i])
             #If we recycle a card partially on itself, we need to consider the recycled cells as empty
-            if not self.is_on_board(pos) or (self.board[pos] != 0 and pos not in recycling_pos):
+            if not (self.is_on_board(pos) and (self.board[pos] == 0 or l_in_rec(pos))):
                 return False
         for i in range(no_empty_pos.shape[0]):
             pos = tuple(no_empty_pos[i])
             on_board = self.is_on_board(pos)
             is_empty = self.board[pos] == 0
             #If we recycle a card to put it above, we need to consider the cells recycled as empty
-            if on_board and (is_empty or pos in recycling_pos): #on board and empty
+            if on_board and (is_empty or l_in_rec(pos)): #on board and empty
                 return False
         for i in range(empty_pos.shape[0]):
             pos = tuple(empty_pos[i])
@@ -193,7 +200,56 @@ class Engine:
         else:
             return self.available_regular()
     def available_recycling(self):
-        return []
+        print("Recycling move!!!")
+        shape = self.board.shape
+        all_moves = []
+        for x in range(shape[0]):
+            for y in range(shape[1]-1, -1, -1):
+                pos  = (x,y)
+                val = self.cards[pos]
+                if val != 0 and pos != self.previous_moves[-1].pos:
+                    all_moves.extend(self.available_recycling_card(pos))
+                    break
+        return all_moves
+    def available_recycling_card(self, card_pos):
+        '''Return all the recycling move for one card located at card_pos'''
+        shape = self.board.shape
+        card_type = int(self.cards[card_pos])
+        ret = []
+        #Store the x corresponding to card_pos to retrieve them later
+        if card_type in {1, 3, 5, 7}: #If it is an horizontal move we need to x (thus two column are concerned).
+            card_pos_x = np.array([card_pos[0], card_pos[0]+1])
+        else:
+            card_pos_x = np.array([card_pos[0]])
+
+        #We look were we could move the current card
+        for x in range(shape[0]):
+            #Find the first no-empty cell of the column
+            #If it's on the column of the current card directly set the position to the card
+            if x in card_pos_x:
+                pos = (x, card_pos[1])
+            else:
+                pos = (x,0)
+                for y in range(shape[1]-1, -1, -1):
+                    if self.board[(x,y)] != 0:
+                        pos = (x,y+1)
+                        break
+            #If the pos we found is not even on the board, it means the column is full
+            if not self.is_on_board(pos):
+                continue
+            #For all type of position, we check if its a legal move and add it to the list if so.
+            for t in range(1, 9):
+                move = Move()
+                move.recycling = True
+                move.type = t
+                move.pos = pos
+                move.pos_rec = card_pos
+                if t == card_type and pos == card_pos:
+                    continue
+                legal = self.check_move(move)
+                if legal:
+                    ret.append(move)
+        return ret
     def available_regular(self):
         regular_moves = []
         shape = self.board.shape
@@ -203,6 +259,7 @@ class Engine:
             for y in range(shape[1]-1, -1, -1):
                 if self.board[(x,y)] != 0:
                     pos = (x,y+1)
+                    break
             #If the pos we found is not even on the board, it means the column is full
             if not self.is_on_board(pos):
                 continue
@@ -212,7 +269,6 @@ class Engine:
                 move.recycling = False
                 move.type = t
                 move.pos = pos
-                print(move)
                 legal = self.check_move(move)
                 if legal:
                     regular_moves.append(move)
@@ -326,8 +382,11 @@ class Engine:
         current_turn = 0
         while True:
             move = self.ais[current_player].play(self) #Call the player function
-            print("Player ", current_player, ": ", move)
+            # print("Player ", current_player, ": ")
+            # print(move)
+            print("Turn: ", current_turn," ",self.card_count)
             legal_move = self.execute(move)
+            self.print()
             if not legal_move:
                 continue
             current_player = (current_player+1)%2
@@ -335,3 +394,4 @@ class Engine:
             who_win = self.is_winning()
             if who_win >= 0:
                 return who_win
+            current_turn += 1

@@ -1,5 +1,6 @@
 from engine import Engine
 from move import Move
+from human_player import HumanPlayer
 
 def test_move_wrong_recycling():
     engine = Engine()
@@ -7,7 +8,7 @@ def test_move_wrong_recycling():
     move.recycling = True
     move.type = 1
     move.pos = (0,0)
-    val = engine.execute(move)
+    val = engine.check_move(move)
     assert(val == False)
 
 def test_recycling():
@@ -168,3 +169,22 @@ def test_move_right2():
     move.pos = (2,0)
     val = engine.execute(move)
     assert(val == True)
+
+def test_recycling_on_card():
+    engine = Engine(card_count=2)
+    human = HumanPlayer()
+    mv_str = "0 6 A 1"
+    mv = human.match_move(mv_str)
+    assert(mv is not None)
+    val = engine.execute(mv)
+    assert(val == True)
+    mv_str = "0 8 G 1"
+    mv = human.match_move(mv_str)
+    assert(mv is not None)
+    val = engine.execute(mv)
+    assert(val == True)
+    mv_str = "A 1 A 2 7 F 1"
+    mv = human.match_move(mv_str)
+    assert(mv is not None)
+    val = engine.execute(mv)
+    assert(val == False)
