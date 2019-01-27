@@ -91,11 +91,57 @@ class Engine:
         if legal:
             self.do_move(move)
         return legal
+    def cancel_last_move(self):
+        last_move = self.previous_moves[-1]
+        self.previous_moves.pop()
+        #Recycling or not, remove the card movead
+        #Do it before the recycling in order to avoid erase the card replaced by a recycling
+        if last_move.type in {1, 3, 5, 7}: # horizontal last_move
+            pos1 = last_move.pos
+            pos2 = (last_move.pos[0]+1, last_move.pos[1])
+        elif last_move.type in {2, 4, 6, 8}: # vertical last_move
+            pos1 = last_move.pos
+            pos2 = (last_move.pos[0], last_move.pos[1]+1)
+        self.cards[pos1] = 0
+        self.board[pos1] = 0
+        self.board[pos2] = 0
+
+        #if last move was a recycling one, put back the card
+        if last_move.recycling:
+            #Find the two position
+            if last_move.type_rec in {1, 3, 5, 7}: # horizontal last_move
+                pos1 = last_move.pos_rec
+                pos2 = (last_move.pos_rec[0]+1, last_move.pos_rec[1])
+            elif last_move.type_rec in {2, 4, 6, 8}: # vertical last_move
+                pos1 = last_move.pos_rec
+                pos2 = (last_move.pos_rec[0], last_move.pos_rec[1]+1)
+
+            #Set the value on the board
+            if last_move.type_rec == 1 or last_move.type_rec == 4:
+                self.board[pos1] = 1
+                self.board[pos2] = 4
+            elif last_move.type_rec == 2 or last_move.type_rec == 3:
+                self.board[pos1] = 4
+                self.board[pos2] = 1
+            elif last_move.type_rec == 5 or last_move.type_rec == 8:
+                self.board[pos1] = 2
+                self.board[pos2] = 3
+            elif last_move.type_rec == 6 or last_move.type_rec == 7:
+                self.board[pos1] = 3
+                self.board[pos2] = 2
+
+            #Place the type in the cards matrix
+            self.cards[pos1] = last_move.type_rec
+        else:
+            self.card_count += 1
+
+
     def do_move(self, move):
         # Now we've checked the move, let's do it
         if move.recycling:
             #Don't use recycling_pos because I intend to separate the function in two later
             pos1 = move.pos_rec
+            move.type_rec = self.cards[move.pos_rec]
             if self.cards[move.pos_rec] in {1, 3, 5, 7}:
                 pos2 = (move.pos_rec[0]+1, move.pos_rec[1])
             elif self.cards[move.pos_rec] in {2, 4, 6, 8}:
@@ -374,18 +420,19 @@ class Engine:
         if len(self.previous_moves) > 60:
             return 2
         return -1
+
     def play(self, player1, player2):
         self.ais = [player1, player2]
 
         current_player = 0
         current_turn = 0
         while True:
-            move = self.ais[current_player].play(self) #Call the player function
-            # print("Player ", current_player, ": ")
-            # print(move)
+            move = self.ais[current_player].play(current_player, self) #Call the player function
+            print("Player ", self.ais[current_player].name, ": ")
+            print(move)
             # print("Turn: ", current_turn," ",self.card_count)
             legal_move = self.execute(move)
-            # self.print()
+            self.print()
             if not legal_move:
                 continue
             current_player = (current_player+1)%2
