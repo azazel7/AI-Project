@@ -44,3 +44,17 @@ class Move:
             upper_line = upper_line + bg_white + fg_black + "x" + fg_default + bg_default + "\n"
             line = line + bg_red + fg_black + "o" + fg_default + bg_default + ")"
         return upper_line + line
+    def print_as_input(self):
+        line = ""
+        if self.recycling:
+            line += chr(self.pos_rec[0] + 65)
+            line += " " + str(self.pos_rec[1]+1)
+            #This is random because we don't the second position of the card only the bottom left is used so far
+            line += " " + chr(self.pos_rec[0] + 65)
+            line += " " + str(self.pos_rec[1]+2)
+        else:
+            line += "0"
+        line += " " + str(self.type)
+        line += " " + chr(self.pos[0] + 65)
+        line += " " + str(self.pos[1]+1)
+        print(line)
