@@ -28,8 +28,6 @@ class HumanPlayer:
             matching = self.re_recycling.match(line)
             if matching is not None:
                 #Add -1 because our coordinates start from zero
-                for i in range(8):
-                    print(matching.group(i))
                 rec_x1 = ord(matching.group(1).lower()[0]) - 96 -1
                 rec_y1 = int(matching.group(2)) - 1
                 rec_x2 = ord(matching.group(3).lower()[0]) - 96 -1
