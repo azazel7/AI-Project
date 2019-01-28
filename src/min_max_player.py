@@ -1,8 +1,8 @@
-import numpy as np
 import time
 import copy
+import numpy as np
+from move import Move
 from engine import Engine
-import cProfile
 
 def timeit(method):
     def timed(*args, **kw):
@@ -18,8 +18,9 @@ def timeit(method):
     return timed
 
 class MinMaxPlayer:
-    def __init__(self):
+    def __init__(self, heuristic):
         self.name = "MinMax"
+        self.heuristic_object = heuristic
 
     @timeit
     def play(self, id_ai, engine):
@@ -28,14 +29,7 @@ class MinMaxPlayer:
         return move[1]
 
     def heuristic(self, id_ai, engine):
-        winner = engine.is_winning()
-        if winner == id_ai:
-            return 10000
-        elif winner == (id_ai + 1)%2:
-            return -10000
-        elif winner == 2:
-            return -1000
-        return np.random.randint(1, 10)
+        return self.heuristic_object.value(id_ai, engine)
 
     def max(self, id_ai, engine, depth, alpha, beta):
         current_val = self.heuristic(id_ai, engine)
@@ -46,7 +40,7 @@ class MinMaxPlayer:
         best_move = None
         for move in moves:
             engine.do_move(move) #No need to check if the move is legal it has already been done
-            value = self.min((id_ai%2)+1, engine, depth-1, alpha, beta)
+            value = self.min((id_ai+1)%2, engine, depth-1, alpha, beta)
             engine.cancel_last_move()
             value = value[0] #Min return tuple
             if value > alpha:
@@ -64,7 +58,7 @@ class MinMaxPlayer:
         best_move = None
         for move in moves:
             engine.do_move(move) #No need to check if the move is legal it has already been done
-            value = self.max((id_ai%2)+1, engine, depth-1, alpha, beta)
+            value = self.max((id_ai+1)%2, engine, depth-1, alpha, beta)
             engine.cancel_last_move()
             value = value[0] #Min return tuple
             if value < beta:
