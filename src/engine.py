@@ -1,12 +1,14 @@
 import numpy as np
 from move import Move
+from scipy import signal
+from scipy import misc
 
 class Engine:
     def __init__(self, width=8, height=12, card_count=24, max_turn=60):
         self.width = width
         self.height = height
-        self.board = np.zeros((width, height))
-        self.cards = np.zeros((width, height))
+        self.board = np.zeros((width, height), dtype=np.int8)
+        self.cards = np.zeros((width, height), dtype=np.int8)
         self.card_count = card_count
         self.max_turn = max_turn
         self.previous_moves = []
@@ -34,6 +36,11 @@ class Engine:
         self.matching_cells[1][3][1] = 1
 
         self.all_lines = self.build_all_lines()
+
+        self.conv_column = np.ones((1, self.win_length))
+        self.conv_row = np.ones((self.win_length, 1))
+        self.conv_diag = np.eye(self.win_length, dtype=np.int8)
+        self.conv_cdiag = self.conv_diag[::-1] #Flip on the vertical axis
 
     def build_all_lines(self):
         '''This function build all lines of the board with coordinates of each cell. Row, column, and diagonals'''
@@ -135,7 +142,6 @@ class Engine:
         else:
             self.card_count += 1
 
-
     def do_move(self, move):
         # Now we've checked the move, let's do it
         if move.recycling:
@@ -221,23 +227,49 @@ class Engine:
         else:
             l_in_rec = lambda p: False
 
-	#Check is placement_pos are available
-        for i in range(placement_pos.shape[0]):
+        def aaa():
+            #Check is placement_pos are available
+            i = 0
             pos = tuple(placement_pos[i])
             #If we recycle a card partially on itself, we need to consider the recycled cells as empty
             if not (self.is_on_board(pos) and (self.board[pos] == 0 or l_in_rec(pos))):
                 return False
-        for i in range(no_empty_pos.shape[0]):
-            pos = tuple(no_empty_pos[i])
-            on_board = self.is_on_board(pos)
-            is_empty = self.board[pos] == 0
-            #If we recycle a card to put it above, we need to consider the cells recycled as empty
-            if on_board and (is_empty or l_in_rec(pos)): #on board and empty
+
+            i = 1
+            pos = tuple(placement_pos[i])
+            #If we recycle a card partially on itself, we need to consider the recycled cells as empty
+            if not (self.is_on_board(pos) and (self.board[pos] == 0 or l_in_rec(pos))):
                 return False
-        for i in range(empty_pos.shape[0]):
-            pos = tuple(empty_pos[i])
-            if self.is_on_board(pos) and self.board[pos] != 0: #on board and not empty
-                return False
+
+            if no_empty_pos.shape[0] >= 1:
+                i = 0
+                pos = tuple(no_empty_pos[i])
+                on_board = self.is_on_board(pos)
+                is_empty = self.board[pos] == 0
+                #If we recycle a card to put it above, we need to consider the cells recycled as empty
+                if on_board and (is_empty or l_in_rec(pos)): #on board and empty
+                    return False
+            if no_empty_pos.shape[0] == 2:
+                i = 1
+                pos = tuple(no_empty_pos[i])
+                on_board = self.is_on_board(pos)
+                is_empty = self.board[pos] == 0
+                #If we recycle a card to put it above, we need to consider the cells recycled as empty
+                if on_board and (is_empty or l_in_rec(pos)): #on board and empty
+                    return False
+
+            if empty_pos.shape[0] >= 1:
+                i = 0
+                pos = tuple(empty_pos[i])
+                if self.is_on_board(pos) and self.board[pos] != 0: #on board and not empty
+                    return False
+            if empty_pos.shape[0] >= 2:
+                i = 1
+                pos = tuple(empty_pos[i])
+                if self.is_on_board(pos) and self.board[pos] != 0: #on board and not empty
+                    return False
+            return True
+        return aaa()
         #TODO: when recycling we should not undo the last move of our opponent
         return True
     def available_moves(self):
@@ -393,7 +425,7 @@ class Engine:
         if victory[1]:
             return 1
         return -1
-    def is_winning(self):
+    def is_winning2(self):
         '''Return who is winning.
         -1: nobody
          0: player 1
@@ -417,6 +449,54 @@ class Engine:
             return 0
         elif victory[1]:
             return 1
+        if len(self.previous_moves) > 60:
+            return 2
+        return -1
+
+    def is_winning(self):
+        '''Return who is winning.
+        -1: nobody
+         0: player 1
+         1: player 2
+         2: tie
+        '''
+        #NOTE: To move later as attribute
+        board_color = np.array([[0,0], [-1, -1], [-1, 1], [1, -1], [1, 1]])
+        board_remaped = board_color[self.board]
+
+
+        # [:,:,0] --> means on the first axis take all, second axis take all, third axis only take the first index
+        g_line = signal.convolve2d(board_remaped[:,:,0], self.conv_row, mode='valid')
+        g_col = signal.convolve2d(board_remaped[:,:,0], self.conv_column, mode='valid')
+        g_diag = signal.convolve2d(board_remaped[:,:,0], self.conv_diag, mode='valid')
+        g_cdiag = signal.convolve2d(board_remaped[:,:,0], self.conv_cdiag, mode='valid')
+
+
+        #The convolution will take the mask and apply it on every cell of the board.
+        #A convolution will multiply the mask with the value on the board then sum all element generated this way
+        val_line = np.any(np.abs(g_line) >= 4)
+        val_col = np.any(np.abs(g_col) >= 4)
+        val_diag = np.any(np.abs(g_diag) >= 4)
+        val_cdiag = np.any(np.abs(g_cdiag) >= 4)
+        color = val_line or val_col or val_diag or val_cdiag
+
+        g_line = signal.convolve2d(board_remaped[:,:,1], self.conv_row, mode='valid')
+        g_col = signal.convolve2d(board_remaped[:,:,1], self.conv_column, mode='valid')
+        g_diag = signal.convolve2d(board_remaped[:,:,1], self.conv_diag, mode='valid')
+        g_cdiag = signal.convolve2d(board_remaped[:,:,1], self.conv_cdiag, mode='valid')
+
+
+        val_line = np.any(np.abs(g_line) >= 4)
+        val_col = np.any(np.abs(g_col) >= 4)
+        val_diag = np.any(np.abs(g_diag) >= 4)
+        val_cdiag = np.any(np.abs(g_cdiag) >= 4)
+        dot = val_line or val_col or val_diag or val_cdiag
+        if dot and not color:
+            return 1
+        if not dot and color:
+            return 0
+        if dot and color:
+            return (len(self.previous_moves)-1)%2
         if len(self.previous_moves) > 60:
             return 2
         return -1
