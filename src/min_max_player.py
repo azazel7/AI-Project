@@ -18,14 +18,15 @@ def timeit(method):
     return timed
 
 class MinMaxPlayer:
-    def __init__(self, heuristic):
+    def __init__(self, heuristic, depth=3):
         self.name = "MinMax"
         self.heuristic_object = heuristic
+        self.depth = depth
 
     @timeit
     def play(self, id_ai, engine):
         local_engine = copy.deepcopy(engine)
-        move = self.max(id_ai, engine, 3, -1000000, 1000000)
+        move = self.max(id_ai, engine, self.depth, -1000000, 1000000)
         return move[1]
 
     def heuristic(self, id_ai, engine):
