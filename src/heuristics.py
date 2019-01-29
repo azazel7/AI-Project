@@ -41,35 +41,34 @@ class HeuristicConvolution():
         g_cdiag = signal.convolve2d(board_remaped[:,:,0], engine.conv_cdiag, mode='valid')
 
 
-        h_line = np.histogram(np.abs(g_line), bins=[0, 1, 2, 3, 4, 5])
-        h_col = np.histogram(np.abs(g_col), bins=[0, 1, 2, 3, 4, 5])
-        h_diag = np.histogram(np.abs(g_diag), bins=[0, 1, 2, 3, 4, 5])
-        h_cdiag = np.histogram(np.abs(g_cdiag), bins=[0, 1, 2, 3, 4, 5])
-        my_count = h_line[0] + h_col[0] + h_diag[0] + h_cdiag[0]
-        weight = np.array([0, 1, 8, 16, 10000])
-        value_color = np.sum(my_count * weight)
+        convol_color = np.abs(np.concatenate((g_line.reshape(g_line.shape[0] * g_line.shape[1]),\
+                g_col.reshape((g_col.shape[0] * g_col.shape[1])), \
+                g_diag.reshape((g_diag.shape[0] * g_diag.shape[1])), \
+                g_cdiag.reshape((g_cdiag.shape[0] * g_cdiag.shape[1])), \
+                ), axis=0))
         if engine.ais[id_ai].color != 0: #Our color is not the color
-            value_color *= -1
+            convol_color = convol_color * -1
 
-        g_line = signal.convolve2d(board_remaped[:,:,1], engine.conv_row, mode='valid')
-        g_col = signal.convolve2d(board_remaped[:,:,1], engine.conv_column, mode='valid')
-        g_diag = signal.convolve2d(board_remaped[:,:,1], engine.conv_diag, mode='valid')
-        g_cdiag = signal.convolve2d(board_remaped[:,:,1], engine.conv_cdiag, mode='valid')
+        g_line_dot = signal.convolve2d(board_remaped[:,:,1], engine.conv_row, mode='valid')
+        g_col_dot = signal.convolve2d(board_remaped[:,:,1], engine.conv_column, mode='valid')
+        g_diag_dot = signal.convolve2d(board_remaped[:,:,1], engine.conv_diag, mode='valid')
+        g_cdiag_dot = signal.convolve2d(board_remaped[:,:,1], engine.conv_cdiag, mode='valid')
 
-        h_line = np.histogram(np.abs(g_line), bins=[0, 1, 2, 3, 4, 5])
-        h_col = np.histogram(np.abs(g_col), bins=[0, 1, 2, 3, 4, 5])
-        h_diag = np.histogram(np.abs(g_diag), bins=[0, 1, 2, 3, 4, 5])
-        h_cdiag = np.histogram(np.abs(g_cdiag), bins=[0, 1, 2, 3, 4, 5])
-        my_count = h_line[0] + h_col[0] + h_diag[0] + h_cdiag[0]
-        weight = np.array([0, 1, 8, 16, 10000])
-        value_dot = np.sum(my_count * weight)
-
+        convol_dot = np.abs(np.concatenate((g_line_dot.reshape(g_line_dot.shape[0] * g_line_dot.shape[1]),\
+                g_col_dot.reshape((g_col_dot.shape[0] * g_col_dot.shape[1])), \
+                g_diag_dot.reshape((g_diag_dot.shape[0] * g_diag_dot.shape[1])), \
+                g_cdiag_dot.reshape((g_cdiag_dot.shape[0] * g_cdiag_dot.shape[1])), \
+                ), axis=0))
         if engine.ais[id_ai].color != 1: #Our color is not the dot
-            value_dot *= -1
-        value = value_dot + value_color
+            convol_dot = convol_dot * -1
+
+        complete = np.concatenate((convol_color, convol_dot), axis=0)
+
+        my_count = np.histogram(np.abs(complete), bins=[-5, -3, -2, -1, 0, 1, 2, 3, 4, 5])[0]
+        weight = np.array([10000, 16, 8, 1, 0, 1, 8, 16, 10000])
+        value = np.sum(my_count * weight)
 
         return value
-
 class HeuristicNeuralNetwork():
     def __init__(self):
         self.name = "neural"
