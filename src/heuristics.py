@@ -16,6 +16,7 @@ class HeuristicRandom():
 class HeuristicBasic():
     def __init__(self):
         self.name = "basic"
+
     def value(self, id_ai, engine):
         winner = engine.is_winning()
         if winner == id_ai:
@@ -69,6 +70,7 @@ class HeuristicConvolution():
         value = np.sum(my_count * weight)
 
         return value
+
 class HeuristicNeuralNetwork():
     def __init__(self):
         self.name = "neural"
