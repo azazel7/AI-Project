@@ -4,7 +4,7 @@ from scipy import signal
 from scipy import misc
 
 class Engine:
-    def __init__(self, width=8, height=12, card_count=24, max_turn=60):
+    def __init__(self, width=8, height=12, card_count=24, max_turn=60, colors=[0,1]):
         self.width = width
         self.height = height
         self.board = np.zeros((width, height), dtype=np.int8)
@@ -41,6 +41,7 @@ class Engine:
         self.conv_row = np.ones((self.win_length, 1))
         self.conv_diag = np.eye(self.win_length, dtype=np.int8)
         self.conv_cdiag = self.conv_diag[::-1] #Flip on the vertical axis
+        self.colors = colors
 
     def build_all_lines(self):
         '''This function build all lines of the board with coordinates of each cell. Row, column, and diagonals'''
@@ -199,6 +200,7 @@ class Engine:
             no_empty_pos = np.array([(move.pos[0], move.pos[1]-1), (move.pos[0]+1, move.pos[1]-1)])
         if move.type in {2, 4, 6, 8}: # vertical move
             no_empty_pos = np.array([(move.pos[0], move.pos[1]-1)])
+
         if move.recycling:
             if not self.is_on_board(move.pos_rec) or self.cards[move.pos_rec] == 0: #Card to move is outside of the map or there is no card
                 return False
@@ -268,6 +270,8 @@ class Engine:
                 pos = tuple(empty_pos[i])
                 if self.is_on_board(pos) and self.board[pos] != 0: #on board and not empty
                     return False
+            if move.recycling and move.pos_rec == move.pos and move.type == self.cards[move.pos]:
+                return False
             return True
         return aaa()
         #TODO: when recycling we should not undo the last move of our opponent
@@ -288,6 +292,7 @@ class Engine:
                     all_moves.extend(self.available_recycling_card(pos))
                     break
         return all_moves
+
     def available_recycling_card(self, card_pos):
         '''Return all the recycling move for one card located at card_pos'''
         shape = self.board.shape
@@ -456,8 +461,8 @@ class Engine:
     def is_winning(self):
         '''Return who is winning.
         -1: nobody
-         0: player 1
-         1: player 2
+         0: Color
+         1: Dot
          2: tie
         '''
         #NOTE: To move later as attribute
@@ -470,7 +475,6 @@ class Engine:
         g_col = signal.convolve2d(board_remaped[:,:,0], self.conv_column, mode='valid')
         g_diag = signal.convolve2d(board_remaped[:,:,0], self.conv_diag, mode='valid')
         g_cdiag = signal.convolve2d(board_remaped[:,:,0], self.conv_cdiag, mode='valid')
-
 
         #The convolution will take the mask and apply it on every cell of the board.
         #A convolution will multiply the mask with the value on the board then sum all element generated this way
@@ -496,23 +500,26 @@ class Engine:
         if not dot and color:
             return 0
         if dot and color:
-            return (len(self.previous_moves)-1)%2
+            player_idx = (len(self.previous_moves)-1)%2
+            return self.colors[player_idx]
         if len(self.previous_moves) > 60:
             return 2
         return -1
 
     def play(self, player1, player2):
         self.ais = [player1, player2]
+        player1.color = self.colors[0]
+        player2.color = self.colors[1]
 
         current_player = 0
         current_turn = 0
         while True:
             move = self.ais[current_player].play(current_player, self) #Call the player function
-            print("Player ", self.ais[current_player].name, ": ")
-            print(move)
+            # print("Player ", self.ais[current_player].name, ": ")
+            # print(move)
             # print("Turn: ", current_turn," ",self.card_count)
             legal_move = self.execute(move)
-            self.print()
+            # self.print()
             if not legal_move:
                 continue
             current_player = (current_player+1)%2
