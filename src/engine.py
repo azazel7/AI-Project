@@ -43,6 +43,10 @@ class Engine:
         self.conv_cdiag = self.conv_diag[::-1] #Flip on the vertical axis
         self.colors = colors
 
+        self.max_row = 0
+        self.min_column = -1
+        self.max_column = self.width+1
+
     def build_all_lines(self):
         '''This function build all lines of the board with coordinates of each cell. Row, column, and diagonals'''
         board = self.board
@@ -183,6 +187,7 @@ class Engine:
         self.cards[pos1] = move.type
         # keep a list of move done so far
         self.previous_moves.append(move)
+        self.max_row = max(self.max_row, move.pos[0] + move.type in {2, 4, 6, 8})
     def check_move(self, move):
         #  recycling,  type,          pos,    pos_rec
         # (False,      type of card, (x, y), (xx, yy))
@@ -362,7 +367,8 @@ class Engine:
         if pos[1] < 0 or pos[1] >= self.height:
             return False
         return True
-    def print(self):
+
+    def printy(self):
         # 0: Empty cell
         # 1: Red with filled dot
         # 2: Red with empty dot
@@ -507,9 +513,15 @@ class Engine:
         return -1
 
     def play(self, player1, player2):
-        self.ais = [player1, player2]
+        '''Return which player has won.
+        -1: nobody
+         0: Color
+         1: Dot
+         2: tie
+        '''
         player1.color = self.colors[0]
         player2.color = self.colors[1]
+        self.ais = [player1, player2]
 
         current_player = 0
         current_turn = 0
@@ -522,9 +534,13 @@ class Engine:
             # self.print()
             if not legal_move:
                 continue
-            current_player = (current_player+1)%2
 
+            current_player = (current_player+1)%2
             who_win = self.is_winning()
             if who_win >= 0:
-                return who_win
+                winner = who_win
+                for i in range(2):
+                    if self.colors[i] == who_win:
+                        winner = i
+                return winner
             current_turn += 1

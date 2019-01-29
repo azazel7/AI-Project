@@ -2,6 +2,7 @@ from sklearn.neural_network import MLPClassifier
 from scipy import signal
 from scipy import misc
 import numpy as np
+import pickle
 
 from move import Move
 from engine import Engine
@@ -19,9 +20,9 @@ class HeuristicBasic():
 
     def value(self, id_ai, engine):
         winner = engine.is_winning()
-        if winner == id_ai:
+        if winner == engine.ais[id_ai].color:
             return 10000
-        elif winner == (id_ai + 1)%2:
+        elif winner == engine.ais[(id_ai + 1)%2].color:
             return -10000
         elif winner == 2:
             return -1000
@@ -33,7 +34,9 @@ class HeuristicConvolution():
 
     def value(self, id_ai, engine):
         board_color = np.array([[0,0], [-1, -1], [-1, 1], [1, -1], [1, 1]])
-        board_remaped = board_color[engine.board]
+        max_row = max(engine.max_row, engine.win_length)
+        board_remaped = board_color[engine.board[:,:max_row]]
+        # board_remaped = board_color[engine.board]
 
         # [:,:,0] --> means on the first axis take all, second axis take all, third axis only take the first index
         g_line = signal.convolve2d(board_remaped[:,:,0], engine.conv_row, mode='valid')
@@ -48,7 +51,7 @@ class HeuristicConvolution():
                 g_cdiag.reshape((g_cdiag.shape[0] * g_cdiag.shape[1])), \
                 ), axis=0))
         if engine.ais[id_ai].color != 0: #Our color is not the color
-            convol_color = convol_color * -1
+            convol_color = convol_color *-1
 
         g_line_dot = signal.convolve2d(board_remaped[:,:,1], engine.conv_row, mode='valid')
         g_col_dot = signal.convolve2d(board_remaped[:,:,1], engine.conv_column, mode='valid')
@@ -61,22 +64,30 @@ class HeuristicConvolution():
                 g_cdiag_dot.reshape((g_cdiag_dot.shape[0] * g_cdiag_dot.shape[1])), \
                 ), axis=0))
         if engine.ais[id_ai].color != 1: #Our color is not the dot
-            convol_dot = convol_dot * -1
+            convol_dot = convol_dot *-1
 
-        complete = np.concatenate((convol_color, convol_dot), axis=0)
+        complete = np.concatenate((convol_color, convol_dot), axis=0) +4
 
-        my_count = np.histogram(np.abs(complete), bins=[-5, -3, -2, -1, 0, 1, 2, 3, 4, 5])[0]
-        weight = np.array([10000, 16, 8, 1, 0, 1, 8, 16, 10000])
+        my_count = np.histogram(np.abs(complete), bins=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])[0]
+        weight = np.array([-10000, -16, -8, -1, 0, 1, 8, 16, 10000])
         value = np.sum(my_count * weight)
 
         return value
 
 class HeuristicNeuralNetwork():
-    def __init__(self):
-        self.name = "neural"
-        self.nn = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(10,10,10,10,10,2), random_state=1)
-        self.basic_train()
-        print("Training is done")
+    def __init__(self, filename="", name = "neural"):
+        self.name = name
+        self.filename = filename
+        if filename == "":
+            self.nn = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(10,10,10,10,10,2), random_state=1)
+            self.basic_train()
+            print("Basic training is done.")
+        else:
+            self.nn = pickle.load(open(filename, 'rb'))
+            print("Loading from \"", filename, "\" is done.")
+
+    def dump(self):
+        pickle.dump(self.nn, open(self.filename, 'wb'))
 
     def basic_train(self):
         engine = Engine()
@@ -119,4 +130,5 @@ class HeuristicNeuralNetwork():
         shape = engine.board.shape
         board = engine.board.reshape((shape[0] * shape[1]))
         value = self.nn.predict_proba([board])[0][engine.ais[id_ai].color]
+        print(self.nn.predict_proba([board]))
         return value

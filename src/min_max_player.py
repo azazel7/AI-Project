@@ -3,6 +3,7 @@ import copy
 import numpy as np
 from move import Move
 from engine import Engine
+from operator import itemgetter
 
 def timeit(method):
     def timed(*args, **kw):
@@ -25,18 +26,38 @@ class MinMaxPlayer:
 
     @timeit
     def play(self, id_ai, engine):
+        self.id_ai = id_ai
         local_engine = copy.deepcopy(engine)
+        self.average_number_of_moves = 0
+        self.number_of_state = 0
+        self.heuristic_called_count = 0
         move = self.max(id_ai, engine, self.depth, -1000000, 1000000)
+        # print("Visited states: ", self.number_of_state)
+        # print("Average moves: ", (self.average_number_of_moves / self.number_of_state))
+        # print("Heuristic called: ", self.heuristic_called_count)
         return move[1]
 
     def heuristic(self, id_ai, engine):
+        self.heuristic_called_count += 1
         return self.heuristic_object.value(id_ai, engine)
 
+    def value_move(self, engine, move, id_ai):
+        engine.do_move(move) #No need to check if the move is legal it has already been done
+        value = self.heuristic(self.id_ai, engine)
+        engine.cancel_last_move()
+        return (value, move)
+
     def max(self, id_ai, engine, depth, alpha, beta):
-        current_val = self.heuristic(id_ai, engine)
-        if current_val >= 10000 or current_val <= -10000 or depth == 0:
+        if depth == 0:
+            current_val = self.heuristic(self.id_ai, engine)
             return (current_val, None)
         moves = engine.available_moves()
+
+        # value = [self.value_move(engine, mv, self.id_ai) for mv in moves]
+        # moves = [mv[1] for mv in sorted(value, key=itemgetter(0))]
+
+        self.number_of_state += 1
+        self.average_number_of_moves += len(moves)
         best_val = -100000
         best_move = None
         for move in moves:
@@ -52,10 +73,16 @@ class MinMaxPlayer:
         return (alpha, best_move)
 
     def min(self, id_ai, engine, depth, alpha, beta):
-        current_val = self.heuristic(id_ai, engine)
-        if current_val >= 10000 or current_val <= -10000 or depth == 0:
+        if depth == 0:
+            current_val = self.heuristic(self.id_ai, engine)
             return (current_val, None)
         moves = engine.available_moves()
+
+        # value = [self.value_move(engine, mv, self.id_ai) for mv in moves]
+        # moves = [mv[1] for mv in sorted(value, key=itemgetter(0))]
+
+        self.number_of_state += 1
+        self.average_number_of_moves += len(moves)
         best_move = None
         for move in moves:
             engine.do_move(move) #No need to check if the move is legal it has already been done
