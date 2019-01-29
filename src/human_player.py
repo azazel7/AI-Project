@@ -48,7 +48,7 @@ class HumanPlayer:
                 move.pos_rec = (rec_x, rec_y)
         return move
 
-    def play(self, engine):
+    def play(self, id_ai, engine):
         engine.print()
         while True:
             print('(\033[33m' + self.name + '\033[00m) Move: ', end='', flush=True)
