@@ -38,7 +38,6 @@ def test_recycling_same_cells1():
     move.pos = (0,0)
     val = engine.execute(move)
     assert(val == True)
-    engine.print()
     move.recycling = True
     move.type = 6
     move.pos = (1,0)
@@ -56,7 +55,6 @@ def test_recycling_same_cells2():
     move.pos = (0,0)
     val = engine.execute(move)
     assert(val == True)
-    engine.print()
     move.recycling = True
     move.type = 7
     move.pos = (0,0)
@@ -91,7 +89,6 @@ def test_recycling_above():
     move.pos = (0,0)
     val = engine.execute(move)
     assert(val == True)
-    engine.print()
     move.recycling = True
     move.pos = (0,1)
     move.pos_rec = (0,0)
