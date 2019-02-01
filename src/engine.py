@@ -2,6 +2,7 @@ import numpy as np
 from move import Move
 from scipy import signal
 from scipy import misc
+import hello
 
 class Engine:
     def __init__(self, width=8, height=12, card_count=24, max_turn=60, colors=[0,1]):
@@ -233,7 +234,8 @@ class Engine:
             l_in_rec = lambda p: np.any(np.all(recycling_pos == p, axis=1))
         else:
             l_in_rec = lambda p: False
-
+        if move.recycling and move.pos_rec == move.pos and move.type == self.cards[move.pos]:
+            return False
         def aaa():
             #Check is placement_pos are available
             i = 0
@@ -275,12 +277,12 @@ class Engine:
                 pos = tuple(empty_pos[i])
                 if self.is_on_board(pos) and self.board[pos] != 0: #on board and not empty
                     return False
-            if move.recycling and move.pos_rec == move.pos and move.type == self.cards[move.pos]:
-                return False
             return True
-        return aaa()
+        # val = aaa()
+        val = hello.check_pos(self.board, placement_pos, no_empty_pos, empty_pos, recycling_pos, self.width, self.height) == 1
+        return val
         #TODO: when recycling we should not undo the last move of our opponent
-        return True
+
     def available_moves(self):
         if self.card_count == 0:
             return self.available_recycling()

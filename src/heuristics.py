@@ -3,6 +3,7 @@ from scipy import signal
 from scipy import misc
 import numpy as np
 import pickle
+import hello
 
 from move import Move
 from engine import Engine
@@ -35,7 +36,7 @@ class HeuristicConvolution():
     def value(self, id_ai, engine):
         board_color = np.array([[0,0], [-1, -1], [-1, 1], [1, -1], [1, 1]])
         max_row = max(engine.max_row, engine.win_length)
-        board_remaped = board_color[engine.board[:,:max_row]]
+        board_remaped = board_color[engine.board[:,:max_row]].astype(np.int8)
         # board_remaped = board_color[engine.board]
 
         # [:,:,0] --> means on the first axis take all, second axis take all, third axis only take the first index
@@ -67,10 +68,10 @@ class HeuristicConvolution():
             convol_dot = convol_dot *-1
 
         complete = np.concatenate((convol_color, convol_dot), axis=0) +4
-
-        my_count = np.histogram(np.abs(complete), bins=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])[0]
-        weight = np.array([-10000, -16, -8, -1, 0, 1, 8, 16, 10000])
-        value = np.sum(my_count * weight)
+        # my_count = np.histogram(complete, bins=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])[0]
+        # weight = np.array([-10000, -16, -8, -1, 0, 1, 8, 16, 10000])
+        # value = np.sum(my_count * weight)
+        value = hello.histogram(complete)
 
         return value
 
