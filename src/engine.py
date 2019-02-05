@@ -2,10 +2,11 @@ import numpy as np
 from move import Move
 from scipy import signal
 from scipy import misc
+import gc
 import hello
 
 class Engine:
-    def __init__(self, width=8, height=12, card_count=24, max_turn=60, colors=[0,1]):
+    def __init__(self, width=8, height=12, card_count=24, max_turn=60, colors=[0,1], dark_magic=False):
         self.width = width
         self.height = height
         self.board = np.zeros((width, height), dtype=np.int8)
@@ -14,6 +15,8 @@ class Engine:
         self.max_turn = max_turn
         self.previous_moves = []
         self.win_length = 4
+        self.colors = colors
+        self.dark_magic = dark_magic
         #matching_cells describes how cells can form lines together.
         #for instance, a cell with 1 (red with filled dot) share the same color as 2 (red with empty dot)
         #matching_cells[0] is the matrix for the color
@@ -42,7 +45,6 @@ class Engine:
         self.conv_row = np.ones((self.win_length, 1))
         self.conv_diag = np.eye(self.win_length, dtype=np.int8)
         self.conv_cdiag = self.conv_diag[::-1] #Flip on the vertical axis
-        self.colors = colors
 
         self.max_row = 0
         self.min_column = -1
@@ -236,7 +238,7 @@ class Engine:
             l_in_rec = lambda p: False
         if move.recycling and move.pos_rec == move.pos and move.type == self.cards[move.pos]:
             return False
-        def aaa():
+        def check_pos():
             #Check is placement_pos are available
             i = 0
             pos = tuple(placement_pos[i])
@@ -278,8 +280,10 @@ class Engine:
                 if self.is_on_board(pos) and self.board[pos] != 0: #on board and not empty
                     return False
             return True
-        # val = aaa()
-        val = hello.check_pos(self.board, placement_pos, no_empty_pos, empty_pos, recycling_pos, self.width, self.height) == 1
+        if self.dark_magic:
+            val = hello.check_pos(self.board, placement_pos, no_empty_pos, empty_pos, recycling_pos, self.width, self.height) == 1
+        else:
+            val = check_pos()
         return val
         #TODO: when recycling we should not undo the last move of our opponent
 
@@ -529,6 +533,7 @@ class Engine:
         current_turn = 0
         while True:
             move = self.ais[current_player].play(current_player, self) #Call the player function
+            move.print_as_input()
             # print("Player ", self.ais[current_player].name, ": ")
             # print(move)
             # print("Turn: ", current_turn," ",self.card_count)
