@@ -1,9 +1,11 @@
 from sklearn.neural_network import MLPClassifier
+from sklearn.naive_bayes import GaussianNB
 from scipy import signal
 from scipy import misc
 import numpy as np
 import pickle
 import hello
+import os
 
 from move import Move
 from engine import Engine
@@ -30,14 +32,14 @@ class HeuristicBasic():
         return 1
 
 class HeuristicConvolution():
-    def __init__(self):
+    def __init__(self, dark_magic=False):
         self.name = "convolution"
+        self.dark_magic = dark_magic
 
     def value(self, id_ai, engine):
         board_color = np.array([[0,0], [-1, -1], [-1, 1], [1, -1], [1, 1]])
         max_row = max(engine.max_row, engine.win_length)
-        board_remaped = board_color[engine.board[:,:max_row]].astype(np.int8)
-        # board_remaped = board_color[engine.board]
+        board_remaped = board_color[engine.board[:,:max_row]]
 
         # [:,:,0] --> means on the first axis take all, second axis take all, third axis only take the first index
         g_line = signal.convolve2d(board_remaped[:,:,0], engine.conv_row, mode='valid')
@@ -68,19 +70,31 @@ class HeuristicConvolution():
             convol_dot = convol_dot *-1
 
         complete = np.concatenate((convol_color, convol_dot), axis=0) +4
-        # my_count = np.histogram(complete, bins=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])[0]
-        # weight = np.array([-10000, -16, -8, -1, 0, 1, 8, 16, 10000])
-        # value = np.sum(my_count * weight)
-        value = hello.histogram(complete)
-
+        if self.dark_magic:
+            value = hello.histogram(complete)
+        else:
+            my_count = np.histogram(complete, bins=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])[0]
+            weight = np.array([-10000, -16, -8, -1, 0, 1, 8, 16, 10000])
+            value = np.sum(my_count * weight)
         return value
+
+class HeuristicVspace():
+    def __init__(self):
+        self.name = "vspace"
+
+    def value(self, id_ai, engine):
+        val = hello.heuristic(engine.board)
+        if engine.colors[id_ai] == 1: #Our color is not the dot
+            val *= -1
+        return val
 
 class HeuristicNeuralNetwork():
     def __init__(self, filename="", name = "neural"):
         self.name = name
         self.filename = filename
-        if filename == "":
-            self.nn = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(10,10,10,10,10,2), random_state=1)
+        if filename == "" or not os.path.isfile(filename):
+            print("New Neural Model")
+            self.nn = MLPClassifier(solver='adam', alpha=0, hidden_layer_sizes=(128, 256, 256, 128, 64, 32, 16, 8, 4, 2), random_state=1)
             self.basic_train()
             print("Basic training is done.")
         else:
@@ -107,7 +121,7 @@ class HeuristicNeuralNetwork():
 
         shape = engine.board.shape
         board = engine.board.reshape((shape[0] * shape[1]))
-        self.nn.fit([board], [0])
+        self.nn.partial_fit([board], [0], [0, 1])
 
         engine = Engine()
         move = Move()
@@ -125,11 +139,11 @@ class HeuristicNeuralNetwork():
 
         shape = engine.board.shape
         board = engine.board.reshape((shape[0] * shape[1]))
-        self.nn.fit([board], [1])
+        self.nn.partial_fit([board], [1], [0, 1])
 
     def value(self, id_ai, engine):
         shape = engine.board.shape
         board = engine.board.reshape((shape[0] * shape[1]))
-        value = self.nn.predict_proba([board])[0][engine.ais[id_ai].color]
-        print(self.nn.predict_proba([board]))
+        value = self.nn.predict_proba([board])[0][engine.colors[id_ai]]
+        # print(self.nn.predict_proba([board]))
         return value
