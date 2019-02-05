@@ -49,7 +49,7 @@ class HumanPlayer:
         return move
 
     def play(self, id_ai, engine):
-        engine.print()
+        engine.printy()
         while True:
             print('(\033[33m' + self.name + '\033[00m) Move: ', end='', flush=True)
             line = sys.stdin.readline()
