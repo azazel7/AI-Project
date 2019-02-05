@@ -194,10 +194,21 @@ class Engine:
     def check_move(self, move):
         #  recycling,  type,          pos,    pos_rec
         # (False,      type of card, (x, y), (xx, yy))
-        if move.recycling and self.card_count > 0: # Recycling while there is card left
-            return False
         if not move.recycling and self.card_count == 0:
             return False
+        if move.recycling:
+            if self.card_count > 0: # Recycling while there is card left
+                return False
+            if move.pos_rec == move.pos and move.type == self.cards[move.pos]:
+                return False
+            if not self.is_on_board(move.pos_rec) or self.cards[move.pos_rec] == 0: #Card to move is outside of the map or there is no card
+                return False
+            if move.pos_rec == move.pos and self.cards[move.pos_rec] == move.type:
+                return False
+
+        if self.dark_magic:
+            val = hello.check_move(self.board, move.recycling, move.type, move.pos[0], move.pos[1], move.pos_rec[0], move.pos_rec[1], self.cards[move.pos_rec])
+            return val
 
 	# Create list of position to check before adding a new card
         if move.type in {1, 3, 5, 7}: # horizontal move
@@ -210,11 +221,7 @@ class Engine:
             no_empty_pos = np.array([(move.pos[0], move.pos[1]-1)])
 
         if move.recycling:
-            if not self.is_on_board(move.pos_rec) or self.cards[move.pos_rec] == 0: #Card to move is outside of the map or there is no card
-                return False
             card_to_rec = self.cards[move.pos_rec]
-            if move.pos_rec == move.pos and card_to_rec == move.type:
-                return False
             if card_to_rec in {1, 3, 5, 7}: # Horizontal recycling
                 #The two cells above the recycling card have to be empty
                 empty_pos = np.array([(move.pos_rec[0], move.pos_rec[1]+1), (move.pos_rec[0]+1, move.pos_rec[1]+1)])
@@ -236,8 +243,6 @@ class Engine:
             l_in_rec = lambda p: np.any(np.all(recycling_pos == p, axis=1))
         else:
             l_in_rec = lambda p: False
-        if move.recycling and move.pos_rec == move.pos and move.type == self.cards[move.pos]:
-            return False
         def check_pos():
             #Check is placement_pos are available
             i = 0
@@ -280,10 +285,7 @@ class Engine:
                 if self.is_on_board(pos) and self.board[pos] != 0: #on board and not empty
                     return False
             return True
-        if self.dark_magic:
-            val = hello.check_pos(self.board, placement_pos, no_empty_pos, empty_pos, recycling_pos, self.width, self.height) == 1
-        else:
-            val = check_pos()
+        val = check_pos()
         return val
         #TODO: when recycling we should not undo the last move of our opponent
 

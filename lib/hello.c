@@ -89,34 +89,76 @@ static PyObject* histogram(PyObject *dummy, PyObject *args)
 	return PyInt_FromLong(sum);
 }
 
-static PyObject* check_pos(PyObject *dummy, PyObject *args)
+static PyObject* check_move(PyObject *dummy, PyObject *args)
 {
-	PyObject *arg_placement_pos=NULL, *arg_no_empty=NULL, *arg_empty=NULL, *arg_recycling_pos=NULL, *arg_board=NULL;
-	PyObject *npy_placement_pos=NULL, *npy_no_empty=NULL, *npy_empty=NULL, *npy_recycling_pos=NULL, *npy_board=NULL;
-	int width, height;
-	int nd;
+	PyObject *arg_board=NULL;
+	PyObject *npy_board=NULL;
+	int type, recycling, x_move, y_move, x_rec, y_rec, card_to_rec;
 
-	if (!PyArg_ParseTuple(args, "OOOOOii", &arg_board, &arg_placement_pos, &arg_no_empty, &arg_empty, &arg_recycling_pos, &width, &height))
+	if (!PyArg_ParseTuple(args, "Oiiiiiii", &arg_board, &recycling, &type, &x_move, &y_move, &x_rec, &y_rec, &card_to_rec))
 		return NULL;
 
 	npy_board = PyArray_FROM_OTF(arg_board, NPY_DOUBLE, NPY_IN_ARRAY);
-	npy_placement_pos = PyArray_FROM_OTF(arg_placement_pos, NPY_DOUBLE, NPY_IN_ARRAY);
-	npy_no_empty = PyArray_FROM_OTF(arg_no_empty, NPY_DOUBLE, NPY_IN_ARRAY);
-	npy_empty = PyArray_FROM_OTF(arg_empty, NPY_DOUBLE, NPY_IN_ARRAY);
-	npy_recycling_pos = PyArray_FROM_OTF(arg_recycling_pos, NPY_DOUBLE, NPY_IN_ARRAY);
 
 	double const* board = PyArray_DATA(npy_board);
-	double const* placement_pos = PyArray_DATA(npy_placement_pos);
-	double const* no_empty = PyArray_DATA(npy_no_empty);
-	double const* empty = PyArray_DATA(npy_empty);
-	double const* recycling_pos = PyArray_DATA(npy_recycling_pos);
 
 	npy_intp *shape_board = PyArray_SHAPE(npy_board);
-	npy_intp *shape_placement_pos = PyArray_SHAPE(npy_placement_pos);
-	npy_intp *shape_no_empty = PyArray_SHAPE(npy_no_empty);
-	npy_intp *shape_empty = PyArray_SHAPE(npy_empty);
-	npy_intp *shape_recycling_pos = PyArray_SHAPE(npy_recycling_pos);
+	int width = shape_board[0];
+	int height = shape_board[1];
 
+	int shape_placement_pos[2] = {2, 2};
+	int shape_no_empty[2] = {2, 2};
+	int shape_recycling_pos[2] = {2, 2};
+	int shape_empty[2] = {2, 2};
+	int placement_pos[4];
+	int no_empty[4];
+	int recycling_pos[4];
+	int empty[4];
+	if(type == 1 || type == 3 || type == 5 || type == 7){
+		placement_pos[0] = x_move;
+		placement_pos[1] = y_move;
+		placement_pos[2] = x_move+1;
+		placement_pos[3] = y_move;
+		no_empty[0] = x_move;
+		no_empty[1] = y_move-1;
+		no_empty[2] = x_move+1;
+		no_empty[3] = y_move-1;
+	}
+	else{
+		placement_pos[0] = x_move;
+		placement_pos[1] = y_move;
+		placement_pos[2] = x_move;
+		placement_pos[3] = y_move+1;
+		no_empty[0] = x_move;
+		no_empty[1] = y_move-1;
+		no_empty[2] = x_move;
+		no_empty[3] = y_move-1;
+	}
+	if(recycling == 1){
+		if(card_to_rec == 1 || card_to_rec == 3 || card_to_rec == 5 || card_to_rec == 7){
+			empty[0] = x_rec;
+			empty[1] = y_rec+1;
+			empty[2] = x_rec+1;
+			empty[3] = y_rec+1;
+			recycling_pos[0] = x_rec;
+			recycling_pos[1] = y_rec;
+			recycling_pos[2] = x_rec+1;
+			recycling_pos[3] = y_rec;
+		}
+		else{
+			empty[0] = x_rec;
+			empty[1] = y_rec+2;
+			shape_empty[0] = 1;
+			recycling_pos[0] = x_rec;
+			recycling_pos[1] = y_rec;
+			recycling_pos[2] = x_rec;
+			recycling_pos[3] = y_rec+1;
+		}
+	}
+	else{
+		shape_recycling_pos[0] = 0;
+		shape_empty[0] = 0;
+	}
 	int return_value = 1;
 	for(int i = 0; i < shape_placement_pos[0] && return_value == 1; ++i){
 		int x = (int)placement_pos[i*shape_placement_pos[1]];
@@ -178,10 +220,6 @@ static PyObject* check_pos(PyObject *dummy, PyObject *args)
 		}
 	}
     Py_DECREF(npy_board);
-    Py_DECREF(npy_placement_pos);
-    Py_DECREF(npy_no_empty);
-    Py_DECREF(npy_empty);
-    Py_DECREF(npy_recycling_pos);
 	return PyInt_FromLong(return_value);
 }
 
@@ -321,24 +359,17 @@ static PyObject* heuristic(PyObject *dummy, PyObject *args)
 	int weight_align[4] = {0, 1, 8, 1000000};
 	int weight_vspace[4] = {0, 1, 8, 100000};
 //2 vspace à 3 == victoire
-//
 
 	int values[2] = {0};
 	for(int i = 0; i < 2; ++i){
-		/*printf("Align (%d): ", i);*/
 		for(int x = 0; x < 4; ++x){
 			values[i] += weight_align[x] * align[i][x];
-			/*printf("%d ", align[i][x]);*/
 		}
-		/*printf("\nv space (%d): ", i);*/
 		for(int x = 0; x < 4; ++x){
 			values[i] += weight_vspace[x] * valuable_space_count[i][x];
-			/*printf("%d ", valuable_space_count[i][x]);*/
 		}
-		/*printf("\n");*/
 	}
 
-	/*printf("Color: %d\nDot: %d\n", values[0], values[1]);*/
     Py_DECREF(npy_board);
 	return PyInt_FromLong(values[0] - values[1]);
 }
@@ -357,7 +388,7 @@ static PyMethodDef hello_methods[] = {
                 "A function to build a quick histogram.",
         },
         {
-                "check_pos", check_pos, METH_VARARGS,
+                "check_move", check_move, METH_VARARGS,
                 "A quick critical function of the engine.",
         },
         {
