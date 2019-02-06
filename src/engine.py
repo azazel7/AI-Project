@@ -209,7 +209,6 @@ class Engine:
         if self.dark_magic:
             val = hello.check_move(self.board, move.recycling, move.type, move.pos[0], move.pos[1], move.pos_rec[0], move.pos_rec[1], self.cards[move.pos_rec])
             return val
-
 	# Create list of position to check before adding a new card
         if move.type in {1, 3, 5, 7}: # horizontal move
             placement_pos = np.array([move.pos, (move.pos[0]+1, move.pos[1])])
@@ -358,17 +357,30 @@ class Engine:
             #If the pos we found is not even on the board, it means the column is full
             if not self.is_on_board(pos):
                 continue
+            side_pos = (pos[0]+1,pos[1])
+            below_side_pos = (pos[0]+1,pos[1]-1)
             #For all type of position, we check if its a legal move and add it to the list if so.
-            for t in range(1, 9):
-                move = Move()
-                move.recycling = False
-                move.type = t
-                move.pos = pos
-                legal = self.check_move(move)
-                if legal:
-                    regular_moves.append(move)
-        return regular_moves
+            if self.is_on_board(side_pos) and self.board[side_pos] == 0 and (not self.is_on_board(below_side_pos) or self.board[below_side_pos] != 0):
+                for t in [1, 3, 5, 7]:
+                    move = Move()
+                    move.recycling = False
+                    move.type = t
+                    move.pos = pos
+                    legal = self.check_move(move)
+                    if legal:
+                        regular_moves.append(move)
 
+            # for t in range(1, 9):
+            if pos[1] < shape[1]-1:
+                for t in [2, 4, 6, 8]:
+                    move = Move()
+                    move.recycling = False
+                    move.type = t
+                    move.pos = pos
+                    legal = self.check_move(move)
+                    if legal:
+                        regular_moves.append(move)
+        return regular_moves
     def is_on_board(self, pos):
         if pos[0] < 0 or pos[0] >= self.width:
             return False
