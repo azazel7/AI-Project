@@ -332,6 +332,7 @@ inline void count_line(int const x_start,
 
 	int prev_val = -1;
 	int prev_offset[2] = {-1, -1};
+	int val_prev_poffset[2] = {-1, -1};
 	int count[2];
 #define safe_size_temp_line (12+8)
 	int tmp_vspaces[2][safe_size_temp_line]; //12+8 is just to be sure we have enough space
@@ -364,17 +365,22 @@ inline void count_line(int const x_start,
 					for(int i = 0; i < 2; ++i){
 						if(count[i] > 0){
 							align[i][count[i]-1] += 1;
-							tmp_vspaces[i][offset] = tmp_vspaces[i][offset] < count[i] ? count[i] : tmp_vspaces[i][offset];
+							tmp_vspaces[i][offset] += count[i];
 
 							if(prev_offset[i] >= 0){
 								int const po = prev_offset[i];
-								tmp_vspaces[i][po] = tmp_vspaces[i][po] < count[i] ? count[i] : tmp_vspaces[i][po];
+								int v = val_prev_poffset[i];
+								if(v > 0 && matching_cells[i][prev_val-1][v-1]) //If the value before the previous space match our current line, combine the vspace
+									tmp_vspaces[i][po] += count[i];
+								else
+									tmp_vspaces[i][po] = tmp_vspaces[i][po] < count[i] ? count[i] : tmp_vspaces[i][po];
 							}
 						}
 					}
 				}
 				count[0] = count[1] = 0;
 				prev_offset[0] = prev_offset[1] = offset;
+				val_prev_poffset[0] = val_prev_poffset[1] = prev_val;
 			}
 			else if(prev_val == 0){
 				count[0] = count[1] = 1;
@@ -389,8 +395,13 @@ inline void count_line(int const x_start,
 					else{
 						if(prev_offset[i] >= 0){
 							int const po = prev_offset[i];
-							tmp_vspaces[i][po] = tmp_vspaces[i][po] < count[i] ? count[i] : tmp_vspaces[i][po];
+							int v = val_prev_poffset[i];
+							if(v != 0 && matching_cells[i][prev_val-1][v-1]) //If the value before the previous space match our current line, combine the vspace
+								tmp_vspaces[i][po] += count[i];
+							else
+								tmp_vspaces[i][po] = tmp_vspaces[i][po] < count[i] ? count[i] : tmp_vspaces[i][po];
 							prev_offset[i] = -1;
+							val_prev_poffset[i] = -1;
 						}
 						count[i] = 1;
 					}
@@ -409,7 +420,11 @@ inline void count_line(int const x_start,
 				align[i][count[i]-1] += 1;
 				if(prev_offset[i] >= 0){
 					int const po = prev_offset[i];
-					tmp_vspaces[i][po] = tmp_vspaces[i][po] < count[i] ? count[i] : tmp_vspaces[i][po];
+					int v = val_prev_poffset[i];
+					if(v != 0 && matching_cells[i][prev_val-1][v-1]) //If the value before the previous space match our current line, combine the vspace
+						tmp_vspaces[i][po] += count[i];
+					else
+						tmp_vspaces[i][po] = tmp_vspaces[i][po] < count[i] ? count[i] : tmp_vspaces[i][po];
 				}
 			}
 		}
@@ -420,6 +435,7 @@ inline void count_line(int const x_start,
 			int const y = y_start + j*y_offset_mul;
 			int const idx = x*shape_board[1] + y;
 			int const current_vspace = valuable_space[i][idx];
+			tmp_vspaces[i][j] = tmp_vspaces[i][j] <= 4 ? tmp_vspaces[i][j] : 4;
 			valuable_space[i][idx] = current_vspace < tmp_vspaces[i][j] ? tmp_vspaces[i][j] : current_vspace;
 		}
 }
@@ -457,15 +473,19 @@ static PyObject* heuristic(PyObject *dummy, PyObject *args)
 		count_line(col, 0, 1, 1, board, shape_board, align, valuable_space);
 		//Check cdiagonal from (col, 0)
 		count_line(col, 0, -1, 1, board, shape_board, align, valuable_space);
+		if(col > 0 && col < 7){
+			count_line(col, shape_board[0] - 1, -1, -1, board, shape_board, align, valuable_space);
+			count_line(col, shape_board[0] - 1, 1, -1, board, shape_board, align, valuable_space);
+		}
 	}
 	for(int row = 0; row < shape_board[1]; ++row){
 		//Check row from (0, row)
 		count_line(0, row, 1, 0, board, shape_board, align, valuable_space);
-		if(row > 0){
+		if(row > 7){
 			//Check diagonal from (0, row)
-			count_line(0, row, 1, 1, board, shape_board, align, valuable_space);
+			count_line(0, row, 1, -1, board, shape_board, align, valuable_space);
 			//Check cdiagonal from (shape_board[0]-1, row)
-			count_line(0, row, 1, 1, board, shape_board, align, valuable_space);
+			count_line(shape_board[0]-1, row, -1, -1, board, shape_board, align, valuable_space);
 		}
 	}
 
@@ -496,9 +516,13 @@ static PyObject* heuristic(PyObject *dummy, PyObject *args)
 	double* weight_vspace_avail = weights+8;
 
 	
-	for(int y = shape_board[1]-6; y >= 0; --y){
+	for(int y = shape_board[1]-1; y >= 0; --y){
 		for(int x = 0; x < shape_board[0]; ++x){
 			printf("%d", valuable_space[0][x*shape_board[1]+y]);
+		}
+		printf("\t");
+		for(int x = 0; x < shape_board[0]; ++x){
+			printf("%d", valuable_space[1][x*shape_board[1]+y]);
 		}
 		printf("\n");
 	}
@@ -511,7 +535,7 @@ static PyObject* heuristic(PyObject *dummy, PyObject *args)
 		for(int x = 0; x < 4; ++x)
 			printf("%d ", valuable_space_count[i][x]);
 		printf("\n");
-		printf("Vspace av:\t");
+		printf("Vspace av: ");
 		for(int x = 0; x < 4; ++x)
 			printf("%d ", valuable_space_count_avail[i][x]);
 		printf("\n");
@@ -522,7 +546,14 @@ static PyObject* heuristic(PyObject *dummy, PyObject *args)
 		for(int x = 0; x < 4; ++x){
 			values[i] += weight_align[x] * (double)align[i][x];
 			values[i] += weight_vspace[x] * (double)valuable_space_count[i][x];
-			values[i] += weight_vspace_avail[x] * (double)valuable_space_count_avail[i][x];
+			if(i == next_player){
+				int const xx = x < 3 ? x+1 : 3;
+				values[i] += weight_align[xx] * (double)valuable_space_count_avail[i][x];
+			}
+			else{
+				values[i] += weight_vspace_avail[x] * (double)valuable_space_count_avail[i][x];
+			}
+
 		}
 	}
 
