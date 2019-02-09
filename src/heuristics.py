@@ -79,11 +79,13 @@ class HeuristicConvolution():
         return value
 
 class HeuristicVspace():
-    def __init__(self):
+    def __init__(self, weights=[0, 3, 10, 1000000, 0, 1, 8, 100000, 0, 1, 8, 100000]):
         self.name = "vspace"
+        self.weights = np.array(weights)
 
     def value(self, id_ai, engine):
-        val = hello.heuristic(engine.board)
+        id_next_ai = len(engine.previous_moves) % 2
+        val = hello.heuristic(engine.board, self.weights, engine.colors[id_next_ai])
         if engine.colors[id_ai] == 1: #Our color is not the dot
             val *= -1
         return val
