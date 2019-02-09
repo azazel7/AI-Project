@@ -16,6 +16,7 @@ import numpy as np
 import hello
 
 import argparse
+import deap
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 # parser.add_argument('integers', metavar='N', type=int, nargs='+',
@@ -32,7 +33,7 @@ parser.add_argument("--h1", type=str, default=["random"], nargs="*", required=Fa
 parser.add_argument("--p2", type=str, default=["human"], nargs="*", required=False,help="Set the second player AI (default: human)")
 parser.add_argument("--h2", type=str, default=["random"], nargs="*", required=False,\
         help="Set the heuristic for the second player (default: random)(possible values are: basic, random, convolution, neural, vspace)")
-parser.add_argument("--run_type", type=str, default="standard", required=False,help="Indicate what to do (default: standard)(possible values: standard, win_rate, train)")
+parser.add_argument("--run-type", type=str, default="standard", required=False,help="Indicate what to do (default: standard)(possible values: standard, win_rate, train)")
 parser.add_argument("--round", type=int, default=20, required=False,help="Set the number of round for win_rate runs (default: 20)")
 parser.add_argument("--dark-magic", default=False, action="store_true", required=False,help="Enable dark powered algorithms (default: False)")
 args = parser.parse_args()
@@ -70,6 +71,8 @@ def run_standard(args):
     engine = Engine(args.width, args.height, dark_magic=args.dark_magic)
     winner = engine.play(args.p1, args.p2)
     print("Winner is player ", (winner+1), ": ", engine.ais[winner].name)
+    for mv in engine.previous_moves:
+        print("play_move(engine, \"", mv.str_as_input(), "\")")
 def run_win_rate(args):
     win_rate = [0, 0, 0]
     for i in range(args.round):
@@ -105,22 +108,46 @@ if len(args.p2) > 0:
     type_ai = args.p2[0]
     args.p2 = loader_player[type_ai](args.p2, args.h2)
 
-runner[args.run_type](args)
+# runner[args.run_type](args)
 
+def play_move(engine, mv_str):
+    player = HumanPlayer()
+    mv = player.match_move(mv_str)
+    engine.execute(mv)
 
 def test1():
-    engine = Engine(colors=[1, 0])
-    player = HumanPlayer()
-    h = HeuristicVspace()
-    mv = player.match_move("0 2 A 1")
-    engine.execute(mv)
-    val = h.value(0, engine)
-    print("Val = ", val)
-    mv = player.match_move("0 6 C 1")
-    engine.execute(mv)
+    engine = Engine(dark_magic=True)
+    mm = MinMaxPlayer(HeuristicVspace(), sort_moves=False)
+    p2 = MinMaxPlayer(HeuristicConvolution(), sort_moves=True)
+    engine.initialize_player(mm, p2)
+    play_move(engine, "0 2 A 1")
+    play_move(engine, "0 4 A 3")
+    play_move(engine, "0 2 A 5")
+    play_move(engine, "0 2 A 7")
+    play_move(engine, "0 2 A 9")
+    play_move(engine, "0 2 A 11")
+    play_move(engine, "0 6 B 1")
+    play_move(engine, "0 4 C 1")
+    play_move(engine, "0 7 D 1")
+    play_move(engine, "0 1 B 3")
+    play_move(engine, "0 8 C 4")
+    play_move(engine, "0 8 B 4")
+    play_move(engine, "0 6 B 6")
+    play_move(engine, "0 2 B 8")
+    play_move(engine, "0 8 C 6")
+    play_move(engine, "0 2 B 10")
+    play_move(engine, "0 4 D 2")
+    play_move(engine, "0 8 D 4")
+    play_move(engine, "0 6 D 6")
     engine.printy()
-    val = h.value(0, engine)
-    print("Val = ", val)
+    print(mm.heuristic_object.value(0, engine))
+    # mv = mm.play(0, engine)
+    # mv.print_as_input()
+    # mv = player.match_move("0 8 E 1")
+    # engine.execute(mv)
+    # mv = player.match_move("0 2 D 1")
+    # engine.execute(mv)
+    # engine.printy()
 
 def test2():
     engine = Engine(colors=[1, 0])
@@ -128,35 +155,36 @@ def test2():
     h = HeuristicVspace()
     mv = player.match_move("0 1 A 1")
     engine.execute(mv)
-    engine.printy()
+    # engine.printy()
     mv = player.match_move("0 8 B 2")
     engine.execute(mv)
-    engine.printy()
+    # engine.printy()
     mv = player.match_move("0 1 D 1")
     engine.execute(mv)
-    engine.printy()
+    # engine.printy()
     mv = player.match_move("0 4 D 2")
     engine.execute(mv)
-    engine.printy()
+    # engine.printy()
     mv = player.match_move("0 8 F 1")
     engine.execute(mv)
-    engine.printy()
+    # engine.printy()
     mv = player.match_move("0 8 E 2")
     engine.execute(mv)
-    engine.printy()
+    # engine.printy()
     mv = player.match_move("0 8 E 4")
     engine.execute(mv)
     engine.printy()
     mv = player.match_move("0 8 A 2")
-    engine.execute(mv)
+    # engine.execute(mv)
+    # engine.printy()
     val = h.value(0, engine)
     print(val)
-    engine.printy()
+    # engine.printy()
     mv = player.match_move("0 4 C 1")
     engine.execute(mv)
-    engine.printy()
+    # engine.printy()
 
-
+test1()
 def train_on_game(moves, classifier, winner):
     engine = Engine()
     list_of_state = []
@@ -176,6 +204,7 @@ def self_play_nn():
     h = HeuristicNeuralNetwork("model.nn")
     players = [MonteCarloPlayer(h), MinMaxPlayer(HeuristicVspace(), 3)]
     i = 0
+    win_rate = [0, 0, 0]
     while True:
         engine = Engine()
         winner = engine.play(players[0], players[1])
@@ -183,20 +212,89 @@ def self_play_nn():
         print("Game: ", i+1, " - length: ", len(engine.previous_moves))
         h.dump()
         i += 1
+        if i%10 == 0:
+            print_win_rate(win_rate, ["Neural", "Vspace"])
+
+def genetic():
+   import random
+   from scoop import futures
+   from deap import creator, base, tools, algorithms
+   creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+   creator.create("Individual", list, fitness=creator.FitnessMax)
+
+   toolbox = base.Toolbox()
+
+   toolbox.register("attr_item", np.random.normal)
+   toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_item, n=8)
+   toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+
+   def eval_weights(individual):
+       h1 = HeuristicVspace()
+       h2 = HeuristicVspace(individual)
+       p1 = MinMaxPlayer(h1, 3, True)
+       p2 = MonteCarloPlayer(h2, 6, 0.9)
+       win_rate = [0, 0, 0]
+       average_length = 0
+       for i in range(20):
+           engine = Engine(dark_magic=True)
+           winner = engine.play(p1, p2)
+           win_rate[winner] += 1
+           if winner == 0:
+               average_length += len(engine.previous_moves)
+       if win_rate[0] > 0:
+           length_value = (average_length / win_rate[0])
+       elif win_rate[0] == 0:
+           length_value = -average_length;
+       else:
+           length_value = 100
+       value = (win_rate[1] / sum(win_rate)) * 1000 + length_value
+       return (value,)
+
+   def mutate_weights(i1):
+       idx = np.random.choice(len(i1), 3, False)
+       for i in idx:
+           i1[i] += np.random.normal()
+       return (i1,)
+
+   # print(eval_weights([1.3438680644396945, 0.498955136539056, 2.373622464916838, 2.9149369315659777, 1.220269202863184, -0.5935279154611632, 3.6951931322964073, 0.8889338684358301]))
+   # return 0
+   toolbox.register("evaluate", eval_weights)
+   toolbox.register("mate", tools.cxTwoPoint)
+   toolbox.register("mutate", mutate_weights)
+   toolbox.register("select", tools.selTournament, tournsize=3)
+   toolbox.register("map", futures.map)
+   POP_SIZE = 10
+   population = toolbox.population(n=POP_SIZE)
 
 
+   hof = tools.ParetoFront()
+   stats = tools.Statistics(lambda ind: ind.fitness.values)
+   stats.register("avg", np.mean, axis=0)
+   stats.register("std", np.std, axis=0)
+   stats.register("min", np.min, axis=0)
+   stats.register("max", np.max, axis=0)
 
+   # ret = algorithms.eaSimple(population, toolbox, cxpb=0.1, mutpb=0.5, ngen=4, stats=stats, halloffame=hof)
+   ret = algorithms.eaMuCommaLambda(population, toolbox, mu=POP_SIZE, lambda_=POP_SIZE+5, cxpb=0.1, mutpb=0.5, ngen=7, stats=stats, halloffame=hof)
+   # for gen in range(NGEN):
+       # offspring = algorithms.varAnd(population, toolbox, cxpb=0.5, mutpb=0.1)
+       # fits = toolbox.map(toolbox.evaluate, offspring)
+       # for fit, ind in zip(fits, offspring):
+           # ind.fitness.values = fit
+       # population = toolbox.select(offspring, k=len(population))
+   # top10 = tools.selBest(population, k=10)
+   print(ret)
+   print(hof)
 
-# engine = Engine()
-# # h = HeuristicConvolution()
+# genetic()
+
+# engine = Engine(dark_magic=True)
 # h = HeuristicVspace()
-# # h = HeuristicNeuralNetwork()
-# p = MinMaxPlayer(h, 3)
-# p.color = 1
+# p = MonteCarloPlayer(h, 7, verbose=True)
+# p = MinMaxPlayer(h, 4, False)
 # p2 = MinMaxPlayer(h)
-# p2.color = 0
 
-# engine.ais = [p2, p]
+# engine.initialize_player(p2, p)
 # cProfile.run('mv = p.play(1, engine)', "output_stat")
 # p = pstats.Stats('output_stat')
 # p.strip_dirs()
