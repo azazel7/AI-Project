@@ -44,7 +44,7 @@ class Move:
             upper_line = upper_line + bg_white + fg_black + "x" + fg_default + bg_default + "\n"
             line = line + bg_red + fg_black + "o" + fg_default + bg_default + ")"
         return upper_line + line
-    def print_as_input(self):
+    def str_as_input(self):
         line = ""
         if self.recycling:
             line += chr(self.pos_rec[0] + 65)
@@ -57,4 +57,6 @@ class Move:
         line += " " + str(self.type)
         line += " " + chr(self.pos[0] + 65)
         line += " " + str(self.pos[1]+1)
-        print(line)
+        return line
+    def print_as_input(self):
+        print(self.str_as_input())
