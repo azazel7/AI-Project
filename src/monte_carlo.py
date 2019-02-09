@@ -20,16 +20,17 @@ def timeit(method):
     return timed
 
 class MonteCarloPlayer:
-    def __init__(self, heuristic, max_depth=3, max_time=3.0, name="MonteCarlo"):
+    def __init__(self, heuristic, max_depth=3, max_time=3.0, name="MonteCarlo", verbose=False):
         self.name = name
         self.heuristic_object = heuristic
         self.max_depth = int(max_depth)
         self.max_time = float(max_time)
+        self.verbose = verbose
 
     def stop(self):
         self.timesup = True
 
-    @timeit
+    # @timeit
     def play(self, id_ai, engine):
         self.id_ai = id_ai
         self.timesup = False
@@ -44,7 +45,8 @@ class MonteCarloPlayer:
             if move[0] > best_move[0]:
                 best_move = move
 
-        print("Checked ", self.count_solution, " solutions")
+        if self.verbose:
+            print("Checked ", self.count_solution, " solutions")
         return best_move[1]
 
     def heuristic(self, id_ai, engine):
@@ -64,14 +66,16 @@ class MonteCarloPlayer:
 
         value = [self.value_move(engine, mv, id_ai) for mv in moves]
         list_val = [mv[0] for mv in value]
-        min_score = min([mv[0] for mv in value])
+        min_score = min(list_val)
         sum_score = sum([mv[0]-min_score for mv in value])
-        probability = [(mv[0]-min_score)/sum_score for mv in value]
+        if sum_score > 0:
+            probability = [(mv[0]-min_score)/sum_score for mv in value]
+        else:
+            probability = [1/len(moves) for mv in value]
 
         elt = np.random.choice(len(moves), p=probability)
         move = moves[elt]
         value_move = value[elt][0]
-
 
         # elt = np.random.randint(0, len(moves))
         # move = moves[elt]
