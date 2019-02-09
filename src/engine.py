@@ -191,6 +191,7 @@ class Engine:
         # keep a list of move done so far
         self.previous_moves.append(move)
         self.max_row = max(self.max_row, move.pos[0] + move.type in {2, 4, 6, 8})
+
     def check_move(self, move):
         #  recycling,  type,          pos,    pos_rec
         # (False,      type of card, (x, y), (xx, yy))
@@ -532,6 +533,11 @@ class Engine:
             return 2
         return -1
 
+    def initialize_player(self, player1, player2):
+        player1.color = self.colors[0]
+        player2.color = self.colors[1]
+        self.ais = [player1, player2]
+
     def play(self, player1, player2):
         '''Return which player has won.
         -1: nobody
@@ -539,20 +545,17 @@ class Engine:
          1: Dot
          2: tie
         '''
-        player1.color = self.colors[0]
-        player2.color = self.colors[1]
-        self.ais = [player1, player2]
-
+        self.initialize_player(player1, player2)
         current_player = 0
         current_turn = 0
         while True:
             move = self.ais[current_player].play(current_player, self) #Call the player function
-            move.print_as_input()
             # print("Player ", self.ais[current_player].name, ": ")
             # print(move)
-            # print("Turn: ", current_turn," ",self.card_count)
+            print("Turn: ", current_turn," ",self.card_count, " -> player ", current_player+1)
+            move.print_as_input()
             legal_move = self.execute(move)
-            # self.print()
+            self.printy()
             if not legal_move:
                 continue
 
