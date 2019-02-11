@@ -474,8 +474,8 @@ static PyObject* heuristic(PyObject *dummy, PyObject *args)
 		//Check cdiagonal from (col, 0)
 		count_line(col, 0, -1, 1, board, shape_board, align, valuable_space);
 		if(col > 0 && col < 7){
-			count_line(col, shape_board[0] - 1, -1, -1, board, shape_board, align, valuable_space);
-			count_line(col, shape_board[0] - 1, 1, -1, board, shape_board, align, valuable_space);
+			count_line(col, shape_board[1] - 1, -1, -1, board, shape_board, align, valuable_space);
+			count_line(col, shape_board[1] - 1,  1, -1, board, shape_board, align, valuable_space);
 		}
 	}
 	for(int row = 0; row < shape_board[1]; ++row){
@@ -516,30 +516,30 @@ static PyObject* heuristic(PyObject *dummy, PyObject *args)
 	double* weight_vspace_avail = weights+8;
 
 	
-	for(int y = shape_board[1]-1; y >= 0; --y){
-		for(int x = 0; x < shape_board[0]; ++x){
-			printf("%d", valuable_space[0][x*shape_board[1]+y]);
-		}
-		printf("\t");
-		for(int x = 0; x < shape_board[0]; ++x){
-			printf("%d", valuable_space[1][x*shape_board[1]+y]);
-		}
-		printf("\n");
-	}
-	for(int i = 0; i < 2; ++i){
-		printf("Weight:\t");
-		for(int x = 0; x < 4; ++x)
-			printf("%d ", align[i][x]);
-		printf("\n");
-		printf("Vspace:\t");
-		for(int x = 0; x < 4; ++x)
-			printf("%d ", valuable_space_count[i][x]);
-		printf("\n");
-		printf("Vspace av: ");
-		for(int x = 0; x < 4; ++x)
-			printf("%d ", valuable_space_count_avail[i][x]);
-		printf("\n");
-	}
+	/*for(int y = shape_board[1]-1; y >= 0; --y){*/
+		/*for(int x = 0; x < shape_board[0]; ++x){*/
+			/*printf("%d", valuable_space[0][x*shape_board[1]+y]);*/
+		/*}*/
+		/*printf("\t");*/
+		/*for(int x = 0; x < shape_board[0]; ++x){*/
+			/*printf("%d", valuable_space[1][x*shape_board[1]+y]);*/
+		/*}*/
+		/*printf("\n");*/
+	/*}*/
+	/*for(int i = 0; i < 2; ++i){*/
+		/*printf("Weight:\t");*/
+		/*for(int x = 0; x < 4; ++x)*/
+			/*printf("%d ", align[i][x]);*/
+		/*printf("\n");*/
+		/*printf("Vspace:\t");*/
+		/*for(int x = 0; x < 4; ++x)*/
+			/*printf("%d ", valuable_space_count[i][x]);*/
+		/*printf("\n");*/
+		/*printf("Vspace av: ");*/
+		/*for(int x = 0; x < 4; ++x)*/
+			/*printf("%d ", valuable_space_count_avail[i][x]);*/
+		/*printf("\n");*/
+	/*}*/
 
 	double values[2] = {0};
 	for(int i = 0; i < 2; ++i){
