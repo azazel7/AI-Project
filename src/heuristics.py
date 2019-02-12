@@ -4,7 +4,7 @@ from scipy import signal
 from scipy import misc
 import numpy as np
 import pickle
-import hello
+import magic
 import os
 
 from move import Move
@@ -71,7 +71,7 @@ class HeuristicConvolution():
 
         complete = np.concatenate((convol_color, convol_dot), axis=0) +4
         if self.dark_magic:
-            value = hello.histogram(complete)
+            value = magic.histogram(complete)
         else:
             my_count = np.histogram(complete, bins=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])[0]
             weight = np.array([-10000, -16, -8, -1, 0, 1, 8, 16, 10000])
@@ -85,7 +85,7 @@ class HeuristicVspace():
 
     def value(self, id_ai, engine):
         id_next_ai = len(engine.previous_moves) % 2
-        val = hello.heuristic(engine.board, self.weights, engine.colors[id_next_ai])
+        val = magic.heuristic(engine.board, self.weights, engine.colors[id_next_ai])
         if engine.colors[id_ai] == 1: #Our color is not the dot
             val *= -1
         return val

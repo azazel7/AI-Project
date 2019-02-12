@@ -1,11 +1,6 @@
-from distutils.core import setup, Extension
-# from Cython.Build import cythonize
-
-# setup(
-    # ext_modules = cythonize("src/*.py")
-# )
 #!/usr/bin/env python3
 # encoding: utf-8
+from distutils.core import setup, Extension
 
 
 
@@ -20,8 +15,8 @@ def configuration(parent_package='', top_path=None):
       config = Configuration('',
                              parent_package,
                              top_path)
-      config.add_extension('hello',
-                           ['lib/hello.c'],
+      config.add_extension('magic',
+                           ['lib/magic.c'],
                          extra_compile_args = ["-std=c11"],
                            extra_info=info)
 

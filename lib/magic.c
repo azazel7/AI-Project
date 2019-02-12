@@ -184,24 +184,16 @@ static PyObject* check_pos(PyObject *dummy, PyObject *args)
     Py_DECREF(npy_recycling_pos);
 	return PyInt_FromLong(return_value);
 }
-
-static PyObject* check_move(PyObject *dummy, PyObject *args)
-{
-	PyObject *arg_board=NULL;
-	PyObject *npy_board=NULL;
-	int type, recycling, x_move, y_move, x_rec, y_rec, card_to_rec;
-
-	if (!PyArg_ParseTuple(args, "Opiiiiii", &arg_board, &recycling, &type, &x_move, &y_move, &x_rec, &y_rec, &card_to_rec))
-		return NULL;
-
-	npy_board = PyArray_FROM_OTF(arg_board, NPY_DOUBLE, NPY_IN_ARRAY);
-
-	double const* board = PyArray_DATA(npy_board);
-
-	npy_intp *shape_board = PyArray_SHAPE(npy_board);
-	int width = shape_board[0];
-	int height = shape_board[1];
-
+static int check_move_private(double const* board,
+		int const width,
+		int const height,
+		int const recycling,
+		int const type,
+		int const x_move,
+		int const y_move,
+		int const x_rec,
+		int const y_rec,
+		int const card_to_rec){
 	int shape_placement_pos[2] = {2, 2};
 	int shape_no_empty[2] = {2, 2};
 	int shape_recycling_pos[2] = {2, 2};
@@ -263,7 +255,7 @@ static PyObject* check_move(PyObject *dummy, PyObject *args)
 			return_value = 0;
 			break;
 		}
-		int idx = x*shape_board[1] + y;
+		int idx = x*height + y;
 		int val = (int)board[idx];
 		int in_recycling = 0;
 		//Set in_recycling if [x,y] is in recycling_pos
@@ -285,7 +277,7 @@ static PyObject* check_move(PyObject *dummy, PyObject *args)
 		int x = (int)no_empty[i*shape_no_empty[1]];
 		int y = (int)no_empty[i*shape_no_empty[1] + 1];
 		if(x >= 0 && x < width && y >= 0 && y < height){
-			int idx = x*shape_board[1] + y;
+			int idx = x*height + y;
 			int val = (int)board[idx];
 			int in_recycling = 0;
 			//Set in_recycling if [x,y] is in recycling_pos
@@ -307,7 +299,7 @@ static PyObject* check_move(PyObject *dummy, PyObject *args)
 		int x = (int)empty[i*shape_empty[1]];
 		int y = (int)empty[i*shape_empty[1] + 1];
 		if(x >= 0 && x < width && y >= 0 && y < height){
-			int idx = x*shape_board[1] + y;
+			int idx = x*height + y;
 			int val = (int)board[idx];
 			if(val != 0){
 				return_value = 0;
@@ -315,6 +307,24 @@ static PyObject* check_move(PyObject *dummy, PyObject *args)
 			}
 		}
 	}
+	return return_value;
+}
+static PyObject* check_move(PyObject *dummy, PyObject *args)
+{
+	PyObject *arg_board=NULL;
+	PyObject *npy_board=NULL;
+	int type, recycling, x_move, y_move, x_rec, y_rec, card_to_rec;
+
+	if (!PyArg_ParseTuple(args, "Opiiiiii", &arg_board, &recycling, &type, &x_move, &y_move, &x_rec, &y_rec, &card_to_rec))
+		return NULL;
+
+	npy_board = PyArray_FROM_OTF(arg_board, NPY_DOUBLE, NPY_IN_ARRAY);
+
+	double const* board = PyArray_DATA(npy_board);
+	npy_intp *shape_board = PyArray_SHAPE(npy_board);
+	int width = shape_board[0];
+	int height = shape_board[1];
+	int return_value = check_move_private(board, width, height, recycling, type, x_move, y_move, x_rec, y_rec, card_to_rec);
     Py_DECREF(npy_board);
 	return PyInt_FromLong(return_value);
 }
@@ -562,7 +572,7 @@ static PyObject* heuristic(PyObject *dummy, PyObject *args)
 	return PyInt_FromLong(values[0] - values[1]);
 }
 
-static PyMethodDef hello_methods[] = {
+static PyMethodDef magic_methods[] = {
         {
                 "hello_python", hello_world_c, METH_VARARGS,
                 "Print 'hello xxx'"
@@ -590,15 +600,15 @@ static PyMethodDef hello_methods[] = {
         {NULL, NULL, 0, NULL}
 };
 
-static struct PyModuleDef hello_definition = {
+static struct PyModuleDef magic_definition = {
         PyModuleDef_HEAD_INIT,
-        "hello",
-        "A Python module that prints 'hello world' from C code.",
+        "magic",
+        "A Python module that contains critical function for the double card game.",
         -1,
-        hello_methods
+        magic_methods
 };
 
-PyMODINIT_FUNC PyInit_hello(void) {
+PyMODINIT_FUNC PyInit_magic(void) {
     Py_Initialize();
     import_array();
 	for(int i = 0; i < 2; ++i)
@@ -623,5 +633,5 @@ PyMODINIT_FUNC PyInit_hello(void) {
 	matching_cells[1][2][0] = 1;
 	matching_cells[1][1][3] = 1;
 	matching_cells[1][3][1] = 1;
-    return PyModule_Create(&hello_definition);
+    return PyModule_Create(&magic_definition);
 }

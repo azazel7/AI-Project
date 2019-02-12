@@ -2,8 +2,7 @@ import numpy as np
 from move import Move
 from scipy import signal
 from scipy import misc
-import gc
-import hello
+import magic
 
 class Engine:
     def __init__(self, width=8, height=12, card_count=24, max_turn=60, colors=[0,1], dark_magic=False):
@@ -208,7 +207,7 @@ class Engine:
                 return False
 
         if self.dark_magic:
-            val = hello.check_move(self.board, move.recycling, move.type, move.pos[0], move.pos[1], move.pos_rec[0], move.pos_rec[1], self.cards[move.pos_rec])
+            val = magic.check_move(self.board, move.recycling, move.type, move.pos[0], move.pos[1], move.pos_rec[0], move.pos_rec[1], self.cards[move.pos_rec])
             return val
 	# Create list of position to check before adding a new card
         if move.type in {1, 3, 5, 7}: # horizontal move
