@@ -347,7 +347,7 @@ class Engine:
     def available_regular(self):
         if self.dark_magic:
             possible_moves = [Move(bool(mv[0]), mv[1], (mv[2], mv[3])) for mv in magic.possible_regular(self.board)]
-            return [mv for mv in possible_moves if self.check_move(mv)]
+            return possible_moves #[mv for mv in possible_moves if self.check_move(mv)]
         regular_moves = []
         shape = self.board.shape
         for x in range(shape[0]):

@@ -587,7 +587,6 @@ static PyObject* possible_regular_move(PyObject *dummy, PyObject *args)
 	int height = shape_board[1];
 
 	PyObject* return_list = PyList_New(0);
-	/*PyList_Append(return_list, PyInt_FromLong(3));*/
 	for(int x = 0; x < width; ++x){
 		int y;
 		for(y = height-1; y >= 0; --y){
@@ -605,23 +604,30 @@ static PyObject* possible_regular_move(PyObject *dummy, PyObject *args)
 		int y_side_below = y-1;
 		if(x_side < width && board[x_side * height + y_side] == 0 && (y_side_below < 0 || board[x_side_below*height+y_side_below] != 0))
 			for(int t = 1; t <= 8; t += 2){
-				PyObject* tmp_list = PyList_New(4);
-				PyList_SET_ITEM(tmp_list, 0, PyInt_FromLong(0)); 
-				PyList_SET_ITEM(tmp_list, 1, PyInt_FromLong(t)); 
-				PyList_SET_ITEM(tmp_list, 2, PyInt_FromLong(x)); 
-				PyList_SET_ITEM(tmp_list, 3, PyInt_FromLong(y)); 
-				PyList_Append(return_list, tmp_list);
-				Py_DECREF(tmp_list);
+				//We can check move from here because the if inside the python function only concern recycling move and counting card.
+				//But if this function is called from the engine, it is because there is enough cards.
+				//Plus, this not the recycling function :)
+				if(check_move_private(board, width, height, 0, t, x, y, -1, -1, 0)){
+					PyObject* tmp_list = PyTuple_New(4);
+					PyTuple_SET_ITEM(tmp_list, 0, PyInt_FromLong(0)); 
+					PyTuple_SET_ITEM(tmp_list, 1, PyInt_FromLong(t)); 
+					PyTuple_SET_ITEM(tmp_list, 2, PyInt_FromLong(x)); 
+					PyTuple_SET_ITEM(tmp_list, 3, PyInt_FromLong(y)); 
+					PyList_Append(return_list, tmp_list);
+					Py_DECREF(tmp_list);
+				}
 			}
 		if(y < height-1)
 			for(int t = 2; t <= 8; t += 2){
-				PyObject* tmp_list = PyList_New(4);
-				PyList_SET_ITEM(tmp_list, 0, PyInt_FromLong(0)); 
-				PyList_SET_ITEM(tmp_list, 1, PyInt_FromLong(t)); 
-				PyList_SET_ITEM(tmp_list, 2, PyInt_FromLong(x)); 
-				PyList_SET_ITEM(tmp_list, 3, PyInt_FromLong(y)); 
-				PyList_Append(return_list, tmp_list);
-				Py_DECREF(tmp_list);
+				if(check_move_private(board, width, height, 0, t, x, y, -1, -1, 0)){
+					PyObject* tmp_list = PyTuple_New(4);
+					PyTuple_SET_ITEM(tmp_list, 0, PyInt_FromLong(0)); 
+					PyTuple_SET_ITEM(tmp_list, 1, PyInt_FromLong(t)); 
+					PyTuple_SET_ITEM(tmp_list, 2, PyInt_FromLong(x)); 
+					PyTuple_SET_ITEM(tmp_list, 3, PyInt_FromLong(y)); 
+					PyList_Append(return_list, tmp_list);
+					Py_DECREF(tmp_list);
+				}
 			}
 	}
     Py_DECREF(npy_board);
