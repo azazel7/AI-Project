@@ -300,7 +300,7 @@ class Engine:
             for y in range(shape[1]-1, -1, -1):
                 pos  = (x,y)
                 val = self.cards[pos]
-                if val != 0 and pos != self.previous_moves[-1].pos:
+                if val != 0:
                     all_moves.extend(self.available_recycling_card(pos))
                     break
         return all_moves
@@ -345,6 +345,9 @@ class Engine:
                     ret.append(move)
         return ret
     def available_regular(self):
+        if self.dark_magic:
+            possible_moves = [Move(bool(mv[0]), mv[1], (mv[2], mv[3])) for mv in magic.possible_regular(self.board)]
+            return [mv for mv in possible_moves if self.check_move(mv)]
         regular_moves = []
         shape = self.board.shape
         for x in range(shape[0]):
