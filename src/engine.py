@@ -150,6 +150,11 @@ class Engine:
             self.card_count += 1
 
     def do_move(self, move):
+        if self.dark_magic:
+            self.card_count -= (not move.recycling)
+            self.previous_moves.append(move)
+            self.max_row = magic.do_move(self.board, self.cards, move.recycling, move.type, move.pos[0], move.pos[1], move.pos_rec[0], move.pos_rec[1], self.max_row)
+            return
         # Now we've checked the move, let's do it
         if move.recycling:
             #Don't use recycling_pos because I intend to separate the function in two later

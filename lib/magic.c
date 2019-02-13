@@ -14,6 +14,8 @@ static PyObject* hello_world_c(PyObject *self, PyObject *args) {
 }
 
 int matching_cells[2][4][4];
+int deltas[2][2] = {{0,1}, {1,0}};
+int cell_type[9][2] = {{0,0}, {1,4}, {4,1}, {4,1}, {1,4}, {2,3}, {3,2}, {3,2}, {2,3}};
 
 static PyObject* hello_numpy_c(PyObject *dummy, PyObject *args)
 {
@@ -633,6 +635,50 @@ static PyObject* possible_regular_move(PyObject *dummy, PyObject *args)
     Py_DECREF(npy_board);
 	return return_list;
 }
+
+static PyObject* do_move(PyObject *dummy, PyObject *args)
+{
+	PyObject *arg_board=NULL, *arg_cards=NULL;
+	PyObject *npy_board=NULL, *npy_cards=NULL;
+	int type, recycling, x_move, y_move, x_rec, y_rec, card_to_rec, max_row;
+
+	if (!PyArg_ParseTuple(args, "OOpiiiiii", &arg_board, &arg_cards, &recycling, &type, &x_move, &y_move, &x_rec, &y_rec, &max_row))
+		return NULL;
+	//We use NPY_INT8 to properly modify the board, otherwise, NPY_DOUBLE seems to work for other functions
+	npy_board = PyArray_FROM_OTF(arg_board, NPY_INT8, NPY_IN_ARRAY);
+	npy_cards = PyArray_FROM_OTF(arg_cards, NPY_INT8, NPY_IN_ARRAY);
+
+	char * board = PyArray_DATA(npy_board);
+	npy_intp *shape_board = PyArray_SHAPE(npy_board);
+	char * cards = PyArray_DATA(npy_cards);
+
+	if(recycling){
+		int const idx1 = x_rec*shape_board[1]+y_rec;
+		int const card_to_rec = cards[idx1];
+		int const idx_delta = card_to_rec%2;
+		int const x_rec2 = x_rec + deltas[idx_delta][0];
+		int const y_rec2 = y_rec + deltas[idx_delta][1];
+		int const idx2 = x_rec2 * shape_board[1] + y_rec2;
+		cards[idx1] = 0;
+		board[idx1] = 0;
+		board[idx2] = 0;
+	}
+	{
+		int const idx1 = x_move*shape_board[1]+y_move;
+		int const idx_delta = type%2;
+		int const x_move2 = x_move + deltas[idx_delta][0];
+		int const y_move2 = y_move + deltas[idx_delta][1];
+		int const idx2 = x_move2 * shape_board[1] + y_move2;
+		cards[idx1] = type;
+		board[idx1] = cell_type[type][0];
+		board[idx2] = cell_type[type][1];
+		if(y_move2 > max_row)
+			max_row = y_move2;
+	}
+    Py_DECREF(npy_board);
+    Py_DECREF(npy_cards);
+	return PyInt_FromLong(max_row);
+}
 static PyMethodDef magic_methods[] = {
         {
                 "hello_python", hello_world_c, METH_VARARGS,
@@ -661,6 +707,10 @@ static PyMethodDef magic_methods[] = {
         {
                 "possible_regular", possible_regular_move, METH_VARARGS,
                 "Improve.",
+        },
+        {
+                "do_move", do_move, METH_VARARGS,
+                "Execute a move.",
         },
         {NULL, NULL, 0, NULL}
 };
