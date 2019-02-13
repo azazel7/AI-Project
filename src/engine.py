@@ -153,6 +153,8 @@ class Engine:
         if self.dark_magic:
             self.card_count -= (not move.recycling)
             self.previous_moves.append(move)
+            if move.recycling:
+                move.type_rec = self.cards[move.pos_rec]
             self.max_row = magic.do_move(self.board, self.cards, move.recycling, move.type, move.pos[0], move.pos[1], move.pos_rec[0], move.pos_rec[1], self.max_row)
             return
         # Now we've checked the move, let's do it
@@ -299,6 +301,10 @@ class Engine:
         else:
             return self.available_regular()
     def available_recycling(self):
+        if self.dark_magic:
+            possible_moves = [Move(bool(mv[0]), mv[1], (mv[2], mv[3]), (mv[4], mv[5])) for mv in magic.possible_recycling(self.board, self.cards)]
+            possible_moves = [mv for mv in possible_moves if self.check_move(mv)]
+            return possible_moves
         shape = self.board.shape
         all_moves = []
         for x in range(shape[0]):
@@ -559,10 +565,10 @@ class Engine:
             move = self.ais[current_player].play(current_player, self) #Call the player function
             # print("Player ", self.ais[current_player].name, ": ")
             # print(move)
-            print("Turn: ", current_turn," ",self.card_count, " -> player ", current_player+1)
-            move.print_as_input()
+            # print("Turn: ", current_turn," ",self.card_count, " -> player ", current_player+1)
+            # move.print_as_input()
             legal_move = self.execute(move)
-            self.printy()
+            # self.printy()
             if not legal_move:
                 continue
 

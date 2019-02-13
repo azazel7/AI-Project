@@ -636,6 +636,99 @@ static PyObject* possible_regular_move(PyObject *dummy, PyObject *args)
 	return return_list;
 }
 
+static void possible_recycling_move_card(double const* board,
+										double const* cards,
+										int const width,
+										int const height,
+										int const x_rec,
+										int const y_rec,
+										int const card_to_rec,
+										PyObject* return_list)
+{
+	for(int x = 0; x < width; ++x){
+		int y;
+		if(x == x_rec || ((card_to_rec%2) == 1 && x == x_rec+1)){
+			y = y_rec;
+		}else{
+			for(y = height-1; y >= 0; --y){
+				int idx = x*height + y;
+				if(board[idx] != 0)
+					break;
+			}
+			y+=1; //Either y stopped on a filled cell or on -1, therefore we need to increase by 1.
+			if(y == height)
+				continue;
+		}
+		
+		int x_side = x+1;
+		int y_side = y;
+		int x_side_below = x+1;
+		int y_side_below = y-1;
+		/*if(x_side < width && board[x_side * height + y_side] == 0 && (y_side_below < 0 || board[x_side_below*height+y_side_below] != 0))*/
+			for(int t = 1; t <= 8; t++){
+				//We can check move from here because the if inside the python function only concern recycling move and counting card.
+				//But if this function is called from the engine, it is because there is enough cards.
+				//Plus, this not the recycling function :)
+				/*if(check_move_private(board, width, height, 0, t, x, y, x_rec, y_rec, card_to_rec)){*/
+					PyObject* tmp_list = PyTuple_New(6);
+					PyTuple_SET_ITEM(tmp_list, 0, PyInt_FromLong(1)); 
+					PyTuple_SET_ITEM(tmp_list, 1, PyInt_FromLong(t)); 
+					PyTuple_SET_ITEM(tmp_list, 2, PyInt_FromLong(x)); 
+					PyTuple_SET_ITEM(tmp_list, 3, PyInt_FromLong(y)); 
+					PyTuple_SET_ITEM(tmp_list, 4, PyInt_FromLong(x_rec)); 
+					PyTuple_SET_ITEM(tmp_list, 5, PyInt_FromLong(y_rec)); 
+					PyList_Append(return_list, tmp_list);
+					Py_DECREF(tmp_list);
+				/*}*/
+			}
+		/*if(y < height-1)*/
+			/*for(int t = 2; t <= 8; t += 2){*/
+				/*if(check_move_private(board, width, height, 0, t, x, y, x_rec, y_rec, card_to_rec)){*/
+					/*PyObject* tmp_list = PyTuple_New(6);*/
+					/*PyTuple_SET_ITEM(tmp_list, 0, PyInt_FromLong(1)); */
+					/*PyTuple_SET_ITEM(tmp_list, 1, PyInt_FromLong(t)); */
+					/*PyTuple_SET_ITEM(tmp_list, 2, PyInt_FromLong(x)); */
+					/*PyTuple_SET_ITEM(tmp_list, 3, PyInt_FromLong(y)); */
+					/*PyTuple_SET_ITEM(tmp_list, 4, PyInt_FromLong(x_rec)); */
+					/*PyTuple_SET_ITEM(tmp_list, 5, PyInt_FromLong(y_rec)); */
+					/*PyList_Append(return_list, tmp_list);*/
+					/*Py_DECREF(tmp_list);*/
+				/*}*/
+			/*}*/
+	}
+}
+static PyObject* possible_recycling_move(PyObject *dummy, PyObject *args)
+{
+	PyObject *arg_board=NULL, *arg_cards=NULL;
+	PyObject *npy_board=NULL, *npy_cards=NULL;
+
+	if (!PyArg_ParseTuple(args, "OO", &arg_board, &arg_cards))
+		return NULL;
+	npy_board = PyArray_FROM_OTF(arg_board, NPY_DOUBLE, NPY_IN_ARRAY);
+	npy_cards = PyArray_FROM_OTF(arg_cards, NPY_DOUBLE, NPY_IN_ARRAY);
+
+	double const* board = PyArray_DATA(npy_board);
+	double const* cards = PyArray_DATA(npy_cards);
+	npy_intp *shape_board = PyArray_SHAPE(npy_board);
+	int width = shape_board[0];
+	int height = shape_board[1];
+
+	PyObject* return_list = PyList_New(0);
+	for(int x = 0; x < width; ++x){
+		for(int y = height-1; y >= 0; --y){
+			int const idx = x * height + y;
+			int const val = cards[idx];
+			if(val != 0){
+				possible_recycling_move_card(board, cards, width, height, x, y, val, return_list);
+				break;
+			}
+		}
+	}
+    Py_DECREF(npy_board);
+    Py_DECREF(npy_cards);
+	return return_list;
+}
+
 static PyObject* do_move(PyObject *dummy, PyObject *args)
 {
 	PyObject *arg_board=NULL, *arg_cards=NULL;
@@ -706,6 +799,10 @@ static PyMethodDef magic_methods[] = {
         },
         {
                 "possible_regular", possible_regular_move, METH_VARARGS,
+                "Improve.",
+        },
+        {
+                "possible_recycling", possible_recycling_move, METH_VARARGS,
                 "Improve.",
         },
         {
