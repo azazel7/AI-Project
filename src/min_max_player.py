@@ -33,16 +33,20 @@ class MinMaxPlayer:
         self.average_number_of_moves = 0
         self.number_of_state = 0
         self.heuristic_called_count = 0
-        self.current_best_val = -1000000000
-        self.current_best_mov = []
-        move = self.max(id_ai, engine, self.depth, -100000000, 100000000)
+        if len(engine.previous_moves) > 0:
+            move = self.max(id_ai, engine, self.depth, -100000000, 100000000)
+        else:
+            moves = engine.available_moves()
+            i = np.random.randint(0, len(moves))
+            return moves[i]
+
         # print("Visited states: ", self.number_of_state)
         # print("Average moves: ", (self.average_number_of_moves / self.number_of_state))
         # print("Heuristic called: ", self.heuristic_called_count)
         # print("Value (", self.heuristic_object.name, ") = ", move[0])
         for mv in move[1]:
             mv.print_as_input()
-        print(move[1])
+        print(move[0])
         return move[1][0]
 
     def heuristic(self, id_ai, engine):
