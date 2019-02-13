@@ -79,6 +79,17 @@ def test_recycling_same_cells3():
     val = engine.execute(move)
     assert(val == False)
 
+def test_recycling_same_cells4():
+    '''Test recycling with the same move'''
+    engine = Engine(3, 3, card_count=2)
+    mv = Move(False, 1, (0,0))
+    assert(engine.execute(mv))
+    mv = Move(False, 1, (0,1))
+    assert(engine.execute(mv))
+    mv = Move(True, 2, (1,1), (0,1))
+    val = engine.execute(mv)
+    assert(val)
+
 def test_recycling_above():
     '''Test recycling above the current'''
     engine = Engine()
@@ -262,6 +273,17 @@ def test_recycling_same_cells3_magic():
     move.pos_rec = (0,0)
     val = engine.execute(move)
     assert(val == False)
+
+def test_recycling_same_cells4_magic():
+    '''Test recycling with the same move'''
+    engine = Engine(3, 3, card_count=2, dark_magic=True)
+    mv = Move(False, 1, (0,0))
+    assert(engine.execute(mv))
+    mv = Move(False, 1, (0,1))
+    assert(engine.execute(mv))
+    mv = Move(True, 2, (1,1), (0,1))
+    val = engine.execute(mv)
+    assert(val)
 
 def test_recycling_above_magic():
     '''Test recycling above the current'''
