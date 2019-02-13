@@ -572,6 +572,61 @@ static PyObject* heuristic(PyObject *dummy, PyObject *args)
 	return PyInt_FromLong(values[0] - values[1]);
 }
 
+static PyObject* possible_regular_move(PyObject *dummy, PyObject *args)
+{
+	PyObject *arg_board=NULL;
+	PyObject *npy_board=NULL;
+
+	if (!PyArg_ParseTuple(args, "O", &arg_board))
+		return NULL;
+	npy_board = PyArray_FROM_OTF(arg_board, NPY_DOUBLE, NPY_IN_ARRAY);
+
+	double const* board = PyArray_DATA(npy_board);
+	npy_intp *shape_board = PyArray_SHAPE(npy_board);
+	int width = shape_board[0];
+	int height = shape_board[1];
+
+	PyObject* return_list = PyList_New(0);
+	/*PyList_Append(return_list, PyInt_FromLong(3));*/
+	for(int x = 0; x < width; ++x){
+		int y;
+		for(y = height-1; y >= 0; --y){
+			int idx = x*height + y;
+			if(board[idx] != 0)
+				break;
+		}
+		y+=1; //Either y stopped on a filled cell or on -1, therefore we need to increase by 1.
+		if(y == height)
+			continue;
+
+		int x_side = x+1;
+		int y_side = y;
+		int x_side_below = x+1;
+		int y_side_below = y-1;
+		if(x_side < width && board[x_side * height + y_side] == 0 && (y_side_below < 0 || board[x_side_below*height+y_side_below] != 0))
+			for(int t = 1; t <= 8; t += 2){
+				PyObject* tmp_list = PyList_New(4);
+				PyList_SET_ITEM(tmp_list, 0, PyInt_FromLong(0)); 
+				PyList_SET_ITEM(tmp_list, 1, PyInt_FromLong(t)); 
+				PyList_SET_ITEM(tmp_list, 2, PyInt_FromLong(x)); 
+				PyList_SET_ITEM(tmp_list, 3, PyInt_FromLong(y)); 
+				PyList_Append(return_list, tmp_list);
+				Py_DECREF(tmp_list);
+			}
+		if(y < height-1)
+			for(int t = 2; t <= 8; t += 2){
+				PyObject* tmp_list = PyList_New(4);
+				PyList_SET_ITEM(tmp_list, 0, PyInt_FromLong(0)); 
+				PyList_SET_ITEM(tmp_list, 1, PyInt_FromLong(t)); 
+				PyList_SET_ITEM(tmp_list, 2, PyInt_FromLong(x)); 
+				PyList_SET_ITEM(tmp_list, 3, PyInt_FromLong(y)); 
+				PyList_Append(return_list, tmp_list);
+				Py_DECREF(tmp_list);
+			}
+	}
+    Py_DECREF(npy_board);
+	return return_list;
+}
 static PyMethodDef magic_methods[] = {
         {
                 "hello_python", hello_world_c, METH_VARARGS,
@@ -596,6 +651,10 @@ static PyMethodDef magic_methods[] = {
         {
                 "heuristic", heuristic, METH_VARARGS,
                 "An improved heuristic.",
+        },
+        {
+                "possible_regular", possible_regular_move, METH_VARARGS,
+                "Improve.",
         },
         {NULL, NULL, 0, NULL}
 };
