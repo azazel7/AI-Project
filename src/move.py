@@ -1,9 +1,9 @@
 class Move:
-    def __init__(self):
-        self.recycling = False
-        self.type = 0
-        self.pos = (-1,-1)
-        self.pos_rec = (-1,-1)
+    def __init__(self, recycling=False, card_type=0, pos=(-1,-1), pos_rec=(-1,-1)):
+        self.recycling = recycling
+        self.type = card_type
+        self.pos = pos
+        self.pos_rec = pos_rec
     def str_pos(self, pos):
         return "[" + str(pos[0]) + ", " + str(pos[1]) + "]"
     def __str__(self):

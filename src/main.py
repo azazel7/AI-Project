@@ -12,19 +12,54 @@ import cProfile
 import pstats
 import copy
 import numpy as np
-
-import hello
-
 import argparse
 import deap
+import magic
 
+def play_move(engine, mv_str):
+    player = HumanPlayer()
+    mv = player.match_move(mv_str)
+    engine.execute(mv)
+
+engine = Engine(3, 3, card_count=2)
+mv = Move(False, 2, (0,0))
+engine.execute(mv)
+mv = Move(False, 1, (1,0))
+engine.execute(mv)
+engine.printy()
+moves = engine.available_moves()
+print("l: ", len(moves))
+print("cc: ", engine.card_count)
+targets = []
+
+targets.append(Move(True, 4, (0,0), (0,0)))
+targets.append(Move(True, 6, (0,0), (0,0)))
+targets.append(Move(True, 8, (0,0), (0,0)))
+
+targets.append(Move(True, 1, (1,1), (0,0)))
+targets.append(Move(True, 2, (1,1), (0,0)))
+targets.append(Move(True, 3, (1,1), (0,0)))
+targets.append(Move(True, 4, (1,1), (0,0)))
+targets.append(Move(True, 5, (1,1), (0,0)))
+targets.append(Move(True, 6, (1,1), (0,0)))
+targets.append(Move(True, 7, (1,1), (0,0)))
+targets.append(Move(True, 8, (1,1), (0,0)))
+
+targets.append(Move(True, 2, (2,1), (0,0)))
+targets.append(Move(True, 4, (2,1), (0,0)))
+targets.append(Move(True, 6, (2,1), (0,0)))
+targets.append(Move(True, 8, (2,1), (0,0)))
+
+assert(len(moves) == len(targets))
+
+for mv_target in targets:
+    found = False
+    for mv in moves:
+        if mv.recycling == mv_target.recycling and mv.type == mv_target.type and mv.pos == mv_target.pos and mv.pos_rec == mv_target.pos_rec:
+            found = True
+            break
+    assert(found == True)
 parser = argparse.ArgumentParser(description='Process some integers.')
-# parser.add_argument('integers', metavar='N', type=int, nargs='+',
-                    # help='an integer for the accumulator')
-# parser.add_argument('--sum', dest='accumulate', action='store_const',
-                    # const=sum, default=max,
-                    # help='sum the integers (default: find the max)')
-# parser.add_argument("--width", type=int, nargs="1", default=8, required=False,help="Set the width of the board (default: 8)")
 parser.add_argument("--width", type=int, default=8, required=False,help="Set the width of the board (default: 8)")
 parser.add_argument("--height", type=int, default=12, required=False,help="Set the height of the board (default: 12)")
 parser.add_argument("--p1", type=str, default=["human"], nargs="*", required=False,help="Set the first player AI (default: human)")
@@ -37,7 +72,6 @@ parser.add_argument("--run-type", type=str, default="standard", required=False,h
 parser.add_argument("--round", type=int, default=20, required=False,help="Set the number of round for win_rate runs (default: 20)")
 parser.add_argument("--dark-magic", default=False, action="store_true", required=False,help="Enable dark powered algorithms (default: False)")
 args = parser.parse_args()
-print(args)
 def print_win_rate(win_rate, names=["AI 1", "AI 2"]):
     for i in range(3):
         percent = (win_rate[i] / sum(win_rate))*100
@@ -78,6 +112,8 @@ def run_win_rate(args):
     for i in range(args.round):
         engine = Engine(args.width, args.height, dark_magic=args.dark_magic)
         winner = engine.play(args.p1, args.p2)
+        for mv in engine.previous_moves:
+            print("play_move(engine, \"", mv.str_as_input(), "\")")
         win_rate[winner] += 1
         print_win_rate(win_rate, [p.name for p in engine.ais])
 
@@ -108,39 +144,39 @@ if len(args.p2) > 0:
     type_ai = args.p2[0]
     args.p2 = loader_player[type_ai](args.p2, args.h2)
 
-# runner[args.run_type](args)
+runner[args.run_type](args)
 
-def play_move(engine, mv_str):
-    player = HumanPlayer()
-    mv = player.match_move(mv_str)
-    engine.execute(mv)
 
 def test1():
-    engine = Engine(dark_magic=True)
-    mm = MinMaxPlayer(HeuristicVspace(), sort_moves=False)
-    p2 = MinMaxPlayer(HeuristicConvolution(), sort_moves=True)
-    engine.initialize_player(mm, p2)
-    play_move(engine, "0 2 A 1")
-    play_move(engine, "0 4 A 3")
-    play_move(engine, "0 2 A 5")
-    play_move(engine, "0 2 A 7")
-    play_move(engine, "0 2 A 9")
-    play_move(engine, "0 2 A 11")
-    play_move(engine, "0 6 B 1")
-    play_move(engine, "0 4 C 1")
-    play_move(engine, "0 7 D 1")
-    play_move(engine, "0 1 B 3")
-    play_move(engine, "0 8 C 4")
-    play_move(engine, "0 8 B 4")
-    play_move(engine, "0 6 B 6")
-    play_move(engine, "0 2 B 8")
-    play_move(engine, "0 8 C 6")
-    play_move(engine, "0 2 B 10")
-    play_move(engine, "0 4 D 2")
-    play_move(engine, "0 8 D 4")
-    play_move(engine, "0 6 D 6")
+    engine = Engine(dark_magic=True, colors=[1, 0])
+    p1 = MinMaxPlayer(HeuristicVspace(), sort_moves=False)
+    p2 = MonteCarloPlayer(HeuristicVspace())
+    engine.initialize_player(p1, p2)
+    play_move(engine, "0 6 F 1")
+    play_move(engine, "0 4 F 3")
+    play_move(engine, "0 8 G 1")
+    play_move(engine, "0 6 G 3")
+    play_move(engine, "0 8 E 1")
+    play_move(engine, "0 8 H 1")
+    play_move(engine, "0 4 H 3")
+    play_move(engine, "0 8 E 3")
+    play_move(engine, "0 4 E 5")
+    play_move(engine, "0 5 F 5")
+    play_move(engine, "0 5 F 6")
+    play_move(engine, "0 1 F 7")
+    play_move(engine, "0 7 F 8")
+    play_move(engine, "0 8 H 5")
+    play_move(engine, "0 4 E 7") #Player 2 (color) should have win after that move, player 1 (dot) minmax should not have played it
+    play_move(engine, "0 4 E 9")
+
+    # play_move(engine, "0 2 H 7")
+    # play_move(engine, "0 6 G 9")
+    # play_move(engine, "0 6 H 9")
+    # play_move(engine, "0 4 E 9")
+    # play_move(engine, "0 2 F 9")
     engine.printy()
-    print(mm.heuristic_object.value(0, engine))
+    p1.play(0, engine)
+    print(p1.heuristic_object.value(0, engine))
     # mv = mm.play(0, engine)
     # mv.print_as_input()
     # mv = player.match_move("0 8 E 1")
@@ -184,7 +220,7 @@ def test2():
     engine.execute(mv)
     # engine.printy()
 
-test1()
+# test1()
 def train_on_game(moves, classifier, winner):
     engine = Engine()
     list_of_state = []
@@ -225,7 +261,7 @@ def genetic():
    toolbox = base.Toolbox()
 
    toolbox.register("attr_item", np.random.normal)
-   toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_item, n=8)
+   toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_item, n=12)
    toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
    def eval_weights(individual):
@@ -256,8 +292,6 @@ def genetic():
            i1[i] += np.random.normal()
        return (i1,)
 
-   # print(eval_weights([1.3438680644396945, 0.498955136539056, 2.373622464916838, 2.9149369315659777, 1.220269202863184, -0.5935279154611632, 3.6951931322964073, 0.8889338684358301]))
-   # return 0
    toolbox.register("evaluate", eval_weights)
    toolbox.register("mate", tools.cxTwoPoint)
    toolbox.register("mutate", mutate_weights)
@@ -274,15 +308,7 @@ def genetic():
    stats.register("min", np.min, axis=0)
    stats.register("max", np.max, axis=0)
 
-   # ret = algorithms.eaSimple(population, toolbox, cxpb=0.1, mutpb=0.5, ngen=4, stats=stats, halloffame=hof)
    ret = algorithms.eaMuCommaLambda(population, toolbox, mu=POP_SIZE, lambda_=POP_SIZE+5, cxpb=0.1, mutpb=0.5, ngen=7, stats=stats, halloffame=hof)
-   # for gen in range(NGEN):
-       # offspring = algorithms.varAnd(population, toolbox, cxpb=0.5, mutpb=0.1)
-       # fits = toolbox.map(toolbox.evaluate, offspring)
-       # for fit, ind in zip(fits, offspring):
-           # ind.fitness.values = fit
-       # population = toolbox.select(offspring, k=len(population))
-   # top10 = tools.selBest(population, k=10)
    print(ret)
    print(hof)
 
@@ -290,11 +316,10 @@ def genetic():
 
 # engine = Engine(dark_magic=True)
 # h = HeuristicVspace()
-# p = MonteCarloPlayer(h, 7, verbose=True)
-# p = MinMaxPlayer(h, 4, False)
+# p = MinMaxPlayer(h, 3, False)
 # p2 = MinMaxPlayer(h)
-
 # engine.initialize_player(p2, p)
+# play_move(engine, "0 6 F 1")
 # cProfile.run('mv = p.play(1, engine)', "output_stat")
 # p = pstats.Stats('output_stat')
 # p.strip_dirs()
@@ -304,19 +329,4 @@ def genetic():
 # p.sort_stats('cumtime')
 # p.print_callees()
 
-def run_win_rate():
-    win_rate = [0, 0, 0]
-    for i in range(1):
-        engine = Engine(colors=[1, 0])
-        # val = engine.play(MinMaxPlayer(HeuristicConvolution(), 3), RandomPlayer())
-        # val = engine.play(MinMaxPlayer(HeuristicVspace(), 3), RandomPlayer())
-        val = engine.play(MinMaxPlayer(HeuristicVspace(), 3, True), MinMaxPlayer(HeuristicConvolution(), 3))
-        # val = engine.play(RandomPlayer(), RandomPlayer())
-        # val = engine.play(MonteCarloPlayer(HeuristicVspace(), 5), MinMaxPlayer(HeuristicConvolution(), 3))
-        # val = engine.play(MonteCarloPlayer(HeuristicConvolution(), 4), RandomPlayer())
-        win_rate[val] += 1
-        print_win_rate(win_rate)
-
-# test2()
-# run_win_rate()
 # self_play_nn()

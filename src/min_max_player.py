@@ -26,7 +26,7 @@ class MinMaxPlayer:
         self.depth = int(depth)
         self.sort_moves = sort_moves
 
-    # @timeit
+    @timeit
     def play(self, id_ai, engine):
         self.id_ai = id_ai
         local_engine = copy.deepcopy(engine)
@@ -37,17 +37,16 @@ class MinMaxPlayer:
             move = self.max(id_ai, engine, self.depth, -100000000, 100000000)
         else:
             moves = engine.available_moves()
+            #Exploring some first moves
+            moves = [mv for mv in moves if (mv.pos[0] == 0 or mv.pos[0] < engine.width-1) and mv.type in {1, 3, 5, 7}]
             i = np.random.randint(0, len(moves))
             return moves[i]
 
-        # print("Visited states: ", self.number_of_state)
-        # print("Average moves: ", (self.average_number_of_moves / self.number_of_state))
-        # print("Heuristic called: ", self.heuristic_called_count)
-        # print("Value (", self.heuristic_object.name, ") = ", move[0])
-        for mv in move[1]:
-            mv.print_as_input()
-        print(move[0])
-        return move[1][0]
+        if isinstance(move[1], list):
+            for mv in move[1]:
+                mv.print_as_input()
+            return move[1][0]
+        return move[1]
 
     def heuristic(self, id_ai, engine):
         self.heuristic_called_count += 1
@@ -64,23 +63,24 @@ class MinMaxPlayer:
         if depth == 0:
             current_val = self.heuristic(self.id_ai, engine)
             return (current_val, None)
+
         moves = engine.available_moves()
         s = sum([mv.recycling for mv in moves])
         if self.sort_moves:
             value = [self.value_move(engine, mv, self.id_ai) for mv in moves]
             moves = [mv[1] for mv in sorted(value, key=itemgetter(0), reverse=True) if mv[0] > -900000 ]
 
-        self.number_of_state += 1
-        self.average_number_of_moves += len(moves)
         best_val = -100000
         best_move = None
         l_move = []
+
         for move in moves:
             engine.do_move(move) #No need to check if the move is legal it has already been done
             vlue = self.min((id_ai+1)%2, engine, depth-1, alpha, beta)
             engine.cancel_last_move()
             value = vlue[0] #Min return tuple
             if value > alpha:
+                #Create an history of the best moves found
                 l_move = [copy.deepcopy(move)]
                 if vlue[1] is not None:
                     l_move.extend(vlue[1])
@@ -96,19 +96,20 @@ class MinMaxPlayer:
         if depth == 0:
             current_val = self.heuristic(self.id_ai, engine)
             return (current_val, None)
+        #NOTE: disabled for now because it made the minmax acting stupdly
+        # if engine.is_winning() == engine.colors[id_ai]:
+            # return (-1000000, None)
         moves = engine.available_moves()
 
         if self.sort_moves:
             value = [self.value_move(engine, mv, self.id_ai) for mv in moves]
-            # moves = [mv[1] for mv in sorted(value, key=itemgetter(0))]
             best_opponent = min([mv[0] for mv in value])
             if best_opponent <= -900000:
                 return (best_opponent, None)
             moves = [mv[1] for mv in sorted(value, key=itemgetter(0), reverse=True)]
 
+        #Does the TA or the teacher of AI read this comment?
 
-        self.number_of_state += 1
-        self.average_number_of_moves += len(moves)
         best_move = None
         l_move = []
         for move in moves:
@@ -117,7 +118,7 @@ class MinMaxPlayer:
             engine.cancel_last_move()
             value = vlue[0] #Min return tuple
             if value < beta:
-                # print(move)
+                #Create an history of the best moves found
                 l_move = [copy.deepcopy(move)]
                 if vlue[1] is not None:
                     l_move.extend(vlue[1])

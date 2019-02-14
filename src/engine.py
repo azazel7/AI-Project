@@ -40,11 +40,13 @@ class Engine:
 
         self.all_lines = self.build_all_lines()
 
+        #Build mask for convolution
         self.conv_column = np.ones((1, self.win_length))
         self.conv_row = np.ones((self.win_length, 1))
         self.conv_diag = np.eye(self.win_length, dtype=np.int8)
         self.conv_cdiag = self.conv_diag[::-1] #Flip on the vertical axis
 
+        #Set some stats to help the convolution heuristic
         self.max_row = 0
         self.min_column = -1
         self.max_column = self.width+1
@@ -212,6 +214,8 @@ class Engine:
                 return False
             if move.pos_rec == move.pos and self.cards[move.pos_rec] == move.type:
                 return False
+            if move.pos_rec == self.previous_moves[-1].pos:
+                return False
 
         if self.dark_magic:
             val = magic.check_move(self.board, move.recycling, move.type, move.pos[0], move.pos[1], move.pos_rec[0], move.pos_rec[1], self.cards[move.pos_rec])
@@ -296,6 +300,7 @@ class Engine:
         #TODO: when recycling we should not undo the last move of our opponent
 
     def available_moves(self):
+        #Depending on the number of card left, call the recycling or the regular function
         if self.card_count == 0:
             return self.available_recycling()
         else:
@@ -305,6 +310,7 @@ class Engine:
             possible_moves = [Move(bool(mv[0]), mv[1], (mv[2], mv[3]), (mv[4], mv[5])) for mv in magic.possible_recycling(self.board, self.cards)]
             possible_moves = [mv for mv in possible_moves if self.check_move(mv)]
             return possible_moves
+        #For each column, we look for an available card, then we generate all recycling moves possible with this card
         shape = self.board.shape
         all_moves = []
         for x in range(shape[0]):
@@ -374,6 +380,7 @@ class Engine:
             side_pos = (pos[0]+1,pos[1])
             below_side_pos = (pos[0]+1,pos[1]-1)
             #For all type of position, we check if its a legal move and add it to the list if so.
+            #We try to cut some obviously impossible moves for performance purpose
             if self.is_on_board(side_pos) and self.board[side_pos] == 0 and (not self.is_on_board(below_side_pos) or self.board[below_side_pos] != 0):
                 for t in [1, 3, 5, 7]:
                     move = Move()
@@ -384,7 +391,6 @@ class Engine:
                     if legal:
                         regular_moves.append(move)
 
-            # for t in range(1, 9):
             if pos[1] < shape[1]-1:
                 for t in [2, 4, 6, 8]:
                     move = Move()
@@ -396,6 +402,7 @@ class Engine:
                         regular_moves.append(move)
         return regular_moves
     def is_on_board(self, pos):
+        '''Return True if the pos is on the board'''
         if pos[0] < 0 or pos[0] >= self.width:
             return False
         if pos[1] < 0 or pos[1] >= self.height:
@@ -429,74 +436,6 @@ class Engine:
                 elif self.board[pos] == 4:
                     line = line + bg_white + fg_black + "o" + bg_default + fg_default
             print(line)
-    def is_winning_line(self, line):
-        '''Return who made a serie on this line.
-        -1: nobody
-         0: player 1
-         1: player 2
-         2: both
-        '''
-        victory = [False, False]
-        #Initializing with the first element of the line
-        prev_val = int(self.board[line[0]])
-        if prev_val != 0:
-            count = [1, 1]
-        else:
-            count = [0, 0]
-
-        #Start the loop over the rest of the line
-        for coor in line[1:]:
-            val = int(self.board[coor])
-            if val == 0:
-                count = [0, 0]
-            elif prev_val == 0:
-                count = [1, 1]
-            else:
-                #For both color and dot, check if the previous value match the current value so the serie keep going.
-                #For instance, if prev_val and val indicate the same color or the same type of dot.
-                for i in range(2):
-                    if self.matching_cells[i][prev_val-1][val-1]:
-                        count[i] += 1
-                    else:
-                        count[i] = 1
-                    #NOTE: Don't break if one is winning because it may be a double win
-                    victory[i] = victory[i] or (count[i] >= self.win_length)
-            prev_val = val
-
-        if victory[0] and victory[1]:
-            return 2
-        if victory[0]:
-            return 0
-        if victory[1]:
-            return 1
-        return -1
-    def is_winning2(self):
-        '''Return who is winning.
-        -1: nobody
-         0: player 1
-         1: player 2
-         2: tie
-        '''
-        #TODO improve the search with a maximum high
-        victory = [False, False]
-        #Loop through all the lines. Don't break soon, because we need to check if it's a move with double victory
-        for line in self.all_lines:
-            val = self.is_winning_line(line)
-            if val != -1:
-                if val != 2:
-                    victory[val] = True
-                else:
-                    victory = [True, True]
-            if victory[0] and victory[1]:
-                return (len(self.previous_moves)-1)%2
-
-        if victory[0]:
-            return 0
-        elif victory[1]:
-            return 1
-        if len(self.previous_moves) > 60:
-            return 2
-        return -1
 
     def is_winning(self):
         '''Return who is winning.
@@ -547,6 +486,7 @@ class Engine:
         return -1
 
     def initialize_player(self, player1, player2):
+        '''Initialize some structure in the game and in the players'''
         player1.color = self.colors[0]
         player2.color = self.colors[1]
         self.ais = [player1, player2]
@@ -563,12 +503,10 @@ class Engine:
         current_turn = 0
         while True:
             move = self.ais[current_player].play(current_player, self) #Call the player function
-            # print("Player ", self.ais[current_player].name, ": ")
-            # print(move)
-            # print("Turn: ", current_turn," ",self.card_count, " -> player ", current_player+1)
-            # move.print_as_input()
+            print("Turn: ", current_turn," ",self.card_count, " -> player ", self.ais[current_player].name, "(", current_player+1, ")")
+            move.print_as_input()
             legal_move = self.execute(move)
-            # self.printy()
+            self.printy()
             if not legal_move:
                 continue
 

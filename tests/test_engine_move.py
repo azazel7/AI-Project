@@ -47,18 +47,14 @@ def test_recycling_same_cells1():
 
 def test_recycling_same_cells2():
     '''Test recycling on the same cells used before with same orientation'''
-    engine = Engine()
-    engine.card_count = 1
-    move = Move()
-    move.recycling = False
-    move.type = 1
-    move.pos = (0,0)
+    engine = Engine(card_count=2)
+    move = Move(False, 1, (0,0))
     val = engine.execute(move)
     assert(val == True)
-    move.recycling = True
-    move.type = 7
-    move.pos = (0,0)
-    move.pos_rec = (0,0)
+    move = Move(False, 1, (2,0))
+    val = engine.execute(move)
+    assert(val == True)
+    move = Move(True, 7, (0,0), (0,0))
     val = engine.execute(move)
     assert(val == True)
 
@@ -84,9 +80,10 @@ def test_recycling_same_cells4():
     engine = Engine(3, 3, card_count=2)
     mv = Move(False, 1, (0,0))
     assert(engine.execute(mv))
-    mv = Move(False, 1, (0,1))
+    mv = Move(False, 2, (2,0))
     assert(engine.execute(mv))
-    mv = Move(True, 2, (1,1), (0,1))
+    mv = Move(True, 2, (1,0), (0,0))
+    print(engine.check_move(mv))
     val = engine.execute(mv)
     assert(val)
 
@@ -242,18 +239,14 @@ def test_recycling_same_cells1_magic():
 
 def test_recycling_same_cells2_magic():
     '''Test recycling on the same cells used before with same orientation'''
-    engine = Engine(dark_magic=True)
-    engine.card_count = 1
-    move = Move()
-    move.recycling = False
-    move.type = 1
-    move.pos = (0,0)
+    engine = Engine(card_count=2)
+    move = Move(False, 1, (0,0))
     val = engine.execute(move)
     assert(val == True)
-    move.recycling = True
-    move.type = 7
-    move.pos = (0,0)
-    move.pos_rec = (0,0)
+    move = Move(False, 1, (2,0))
+    val = engine.execute(move)
+    assert(val == True)
+    move = Move(True, 7, (0,0), (0,0))
     val = engine.execute(move)
     assert(val == True)
 
@@ -279,9 +272,10 @@ def test_recycling_same_cells4_magic():
     engine = Engine(3, 3, card_count=2, dark_magic=True)
     mv = Move(False, 1, (0,0))
     assert(engine.execute(mv))
-    mv = Move(False, 1, (0,1))
+    mv = Move(False, 2, (2,0))
     assert(engine.execute(mv))
-    mv = Move(True, 2, (1,1), (0,1))
+    mv = Move(True, 2, (1,0), (0,0))
+    print(engine.check_move(mv))
     val = engine.execute(mv)
     assert(val)
 

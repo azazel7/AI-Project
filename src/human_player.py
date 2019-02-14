@@ -53,6 +53,7 @@ class HumanPlayer:
         while True:
             print('(\033[33m' + self.name + '\033[00m) Move: ', end='', flush=True)
             line = sys.stdin.readline()
+            print(line)
             move = self.match_move(line)
             #If the move has been chosen, check if it's legal
             if move is not None:
