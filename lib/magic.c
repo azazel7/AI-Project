@@ -666,10 +666,12 @@ static void possible_recycling_move_card(double const* board,
 		int y_side_below = y-1;
 		/*if(x_side < width && board[x_side * height + y_side] == 0 && (y_side_below < 0 || board[x_side_below*height+y_side_below] != 0))*/
 			for(int t = 1; t <= 8; t++){
+				if(x == x_rec && y == y_rec && t == card_to_rec)
+					continue;
 				//We can check move from here because the if inside the python function only concern recycling move and counting card.
 				//But if this function is called from the engine, it is because there is enough cards.
 				//Plus, this not the recycling function :)
-				/*if(check_move_private(board, width, height, 0, t, x, y, x_rec, y_rec, card_to_rec)){*/
+				if(check_move_private(board, width, height, 1, t, x, y, x_rec, y_rec, card_to_rec)){
 					PyObject* tmp_list = PyTuple_New(6);
 					PyTuple_SET_ITEM(tmp_list, 0, PyInt_FromLong(1)); 
 					PyTuple_SET_ITEM(tmp_list, 1, PyInt_FromLong(t)); 
@@ -679,7 +681,7 @@ static void possible_recycling_move_card(double const* board,
 					PyTuple_SET_ITEM(tmp_list, 5, PyInt_FromLong(y_rec)); 
 					PyList_Append(return_list, tmp_list);
 					Py_DECREF(tmp_list);
-				/*}*/
+				}
 			}
 		/*if(y < height-1)*/
 			/*for(int t = 2; t <= 8; t += 2){*/
@@ -701,8 +703,9 @@ static PyObject* possible_recycling_move(PyObject *dummy, PyObject *args)
 {
 	PyObject *arg_board=NULL, *arg_cards=NULL;
 	PyObject *npy_board=NULL, *npy_cards=NULL;
+	int last_x, last_y;
 
-	if (!PyArg_ParseTuple(args, "OO", &arg_board, &arg_cards))
+	if (!PyArg_ParseTuple(args, "OOii", &arg_board, &arg_cards, &last_x, &last_y))
 		return NULL;
 	npy_board = PyArray_FROM_OTF(arg_board, NPY_DOUBLE, NPY_IN_ARRAY);
 	npy_cards = PyArray_FROM_OTF(arg_cards, NPY_DOUBLE, NPY_IN_ARRAY);
@@ -718,7 +721,7 @@ static PyObject* possible_recycling_move(PyObject *dummy, PyObject *args)
 		for(int y = height-1; y >= 0; --y){
 			int const idx = x * height + y;
 			int const val = cards[idx];
-			if(val != 0){
+			if(val != 0 && !(x == last_x && y == last_y)){
 				possible_recycling_move_card(board, cards, width, height, x, y, val, return_list);
 				break;
 			}
@@ -772,6 +775,46 @@ static PyObject* do_move(PyObject *dummy, PyObject *args)
     Py_DECREF(npy_cards);
 	return PyInt_FromLong(max_row);
 }
+static PyObject* cancel_move(PyObject *dummy, PyObject *args)
+{
+	PyObject *arg_board=NULL, *arg_cards=NULL;
+	PyObject *npy_board=NULL, *npy_cards=NULL;
+	int type, recycling, x_move, y_move, x_rec, y_rec, card_to_rec, type_rec;
+
+	if (!PyArg_ParseTuple(args, "OOpiiiiii", &arg_board, &arg_cards, &recycling, &type, &x_move, &y_move, &x_rec, &y_rec, &type_rec))
+		return NULL;
+	//We use NPY_INT8 to properly modify the board, otherwise, NPY_DOUBLE seems to work for other functions
+	npy_board = PyArray_FROM_OTF(arg_board, NPY_INT8, NPY_IN_ARRAY);
+	npy_cards = PyArray_FROM_OTF(arg_cards, NPY_INT8, NPY_IN_ARRAY);
+
+	char * board = PyArray_DATA(npy_board);
+	npy_intp *shape_board = PyArray_SHAPE(npy_board);
+	char * cards = PyArray_DATA(npy_cards);
+
+
+	int const idx1 = x_move*shape_board[1]+y_move;
+	int const idx_delta = type%2;
+	int const x_move2 = x_move + deltas[idx_delta][0];
+	int const y_move2 = y_move + deltas[idx_delta][1];
+	int const idx2 = x_move2 * shape_board[1] + y_move2;
+	cards[idx1] = 0;
+	board[idx1] = 0;
+	board[idx2] = 0;
+
+	if(recycling){
+		int const idx1 = x_rec*shape_board[1]+y_rec;
+		int const idx_delta = type_rec%2;
+		int const x_rec2 = x_rec + deltas[idx_delta][0];
+		int const y_rec2 = y_rec + deltas[idx_delta][1];
+		int const idx2 = x_rec2 * shape_board[1] + y_rec2;
+		cards[idx1] = type_rec;
+		board[idx1] = cell_type[type_rec][0];
+		board[idx2] = cell_type[type_rec][1];
+	}
+    Py_DECREF(npy_board);
+    Py_DECREF(npy_cards);
+	return PyInt_FromLong(0);
+}
 static PyMethodDef magic_methods[] = {
         {
                 "hello_python", hello_world_c, METH_VARARGS,
@@ -808,6 +851,10 @@ static PyMethodDef magic_methods[] = {
         {
                 "do_move", do_move, METH_VARARGS,
                 "Execute a move.",
+        },
+        {
+                "cancel_move", cancel_move, METH_VARARGS,
+                "Cancel a move.",
         },
         {NULL, NULL, 0, NULL}
 };
