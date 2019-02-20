@@ -385,3 +385,93 @@ def test_recycling_on_card_magic():
     assert(mv is not None)
     val = engine.execute(mv)
     assert(val == False)
+
+def test_cancel_move():
+    engine = Engine()
+    move = Move()
+    move.recycling = False
+    move.type = 1
+    move.pos = (0,0)
+    val = engine.execute(move)
+    assert(val == True)
+    assert(engine.board[(0,0)] != 0)
+    assert(engine.board[(1,0)] != 0)
+    engine.cancel_last_move()
+    assert(engine.board[(0,0)] == 0)
+    assert(engine.board[(1,0)] == 0)
+
+def test_cancel_move_magic():
+    engine = Engine(dark_magic=True)
+    move = Move()
+    move.recycling = False
+    move.type = 1
+    move.pos = (0,0)
+    val = engine.execute(move)
+    assert(val == True)
+    assert(engine.board[(0,0)] != 0)
+    assert(engine.board[(1,0)] != 0)
+    engine.cancel_last_move()
+    assert(engine.board[(0,0)] == 0)
+    assert(engine.board[(1,0)] == 0)
+
+def test_cancel_move_recycling():
+    engine = Engine(card_count=2)
+    move = Move()
+    move.recycling = False
+    move.type = 1
+    move.pos = (0,0)
+    val = engine.execute(move)
+    assert(val == True)
+    move = Move()
+    move.recycling = False
+    move.type = 1
+    move.pos = (2,0)
+    val = engine.execute(move)
+    assert(val == True)
+    move = Move()
+    move.recycling = True
+    move.type = 1
+    move.pos = (2,1)
+    move.pos_rec = (0,0)
+    val = engine.execute(move)
+    assert(val == True)
+    assert(engine.board[(0,0)] == 0)
+    assert(engine.board[(1,0)] == 0)
+    assert(engine.board[(2,1)] != 0)
+    assert(engine.board[(3,1)] != 0)
+    engine.cancel_last_move()
+    assert(engine.board[(0,0)] != 0)
+    assert(engine.board[(1,0)] != 0)
+    assert(engine.board[(2,1)] == 0)
+    assert(engine.board[(3,1)] == 0)
+
+def test_cancel_move_recycling_magic():
+    engine = Engine(card_count=2, dark_magic=True)
+    move = Move()
+    move.recycling = False
+    move.type = 1
+    move.pos = (0,0)
+    val = engine.execute(move)
+    assert(val == True)
+    move = Move()
+    move.recycling = False
+    move.type = 1
+    move.pos = (2,0)
+    val = engine.execute(move)
+    assert(val == True)
+    move = Move()
+    move.recycling = True
+    move.type = 1
+    move.pos = (2,1)
+    move.pos_rec = (0,0)
+    val = engine.execute(move)
+    assert(val == True)
+    assert(engine.board[(0,0)] == 0)
+    assert(engine.board[(1,0)] == 0)
+    assert(engine.board[(2,1)] != 0)
+    assert(engine.board[(3,1)] != 0)
+    engine.cancel_last_move()
+    assert(engine.board[(0,0)] != 0)
+    assert(engine.board[(1,0)] != 0)
+    assert(engine.board[(2,1)] == 0)
+    assert(engine.board[(3,1)] == 0)
