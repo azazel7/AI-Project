@@ -110,7 +110,12 @@ class Engine:
     def cancel_last_move(self):
         last_move = self.previous_moves[-1]
         self.previous_moves.pop()
-        #Recycling or not, remove the card movead
+        if self.dark_magic:
+            if not last_move.recycling:
+                self.card_count += 1
+            magic.cancel_move(self.board, self.cards, last_move.recycling, last_move.type, last_move.pos[0], last_move.pos[1], last_move.pos_rec[0], last_move.pos_rec[1], last_move.type_rec)
+            return
+        #Recycling or not, remove the card moved
         #Do it before the recycling in order to avoid erase the card replaced by a recycling
         if last_move.type in {1, 3, 5, 7}: # horizontal last_move
             pos1 = last_move.pos
@@ -157,6 +162,8 @@ class Engine:
             self.previous_moves.append(move)
             if move.recycling:
                 move.type_rec = self.cards[move.pos_rec]
+            else:
+                move.type_rec = -1
             self.max_row = magic.do_move(self.board, self.cards, move.recycling, move.type, move.pos[0], move.pos[1], move.pos_rec[0], move.pos_rec[1], self.max_row)
             return
         # Now we've checked the move, let's do it
@@ -208,11 +215,9 @@ class Engine:
         if move.recycling:
             if self.card_count > 0: # Recycling while there is card left
                 return False
-            if move.pos_rec == move.pos and move.type == self.cards[move.pos]:
+            if move.pos_rec == move.pos and move.type == self.cards[move.pos]: #We cannot recycle on the same position with the same orientation
                 return False
             if not self.is_on_board(move.pos_rec) or self.cards[move.pos_rec] == 0: #Card to move is outside of the map or there is no card
-                return False
-            if move.pos_rec == move.pos and self.cards[move.pos_rec] == move.type:
                 return False
             if move.pos_rec == self.previous_moves[-1].pos:
                 return False
@@ -307,8 +312,8 @@ class Engine:
             return self.available_regular()
     def available_recycling(self):
         if self.dark_magic:
-            possible_moves = [Move(bool(mv[0]), mv[1], (mv[2], mv[3]), (mv[4], mv[5])) for mv in magic.possible_recycling(self.board, self.cards)]
-            possible_moves = [mv for mv in possible_moves if self.check_move(mv)]
+            tuple_of_possible_moves = magic.possible_recycling(self.board, self.cards, self.previous_moves[-1].pos[0], self.previous_moves[-1].pos[1])
+            possible_moves = [Move(bool(mv[0]), mv[1], (mv[2], mv[3]), (mv[4], mv[5])) for mv in tuple_of_possible_moves]
             return possible_moves
         #For each column, we look for an available card, then we generate all recycling moves possible with this card
         shape = self.board.shape
