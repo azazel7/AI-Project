@@ -21,44 +21,6 @@ def play_move(engine, mv_str):
     mv = player.match_move(mv_str)
     engine.execute(mv)
 
-engine = Engine(3, 3, card_count=2)
-mv = Move(False, 2, (0,0))
-engine.execute(mv)
-mv = Move(False, 1, (1,0))
-engine.execute(mv)
-engine.printy()
-moves = engine.available_moves()
-print("l: ", len(moves))
-print("cc: ", engine.card_count)
-targets = []
-
-targets.append(Move(True, 4, (0,0), (0,0)))
-targets.append(Move(True, 6, (0,0), (0,0)))
-targets.append(Move(True, 8, (0,0), (0,0)))
-
-targets.append(Move(True, 1, (1,1), (0,0)))
-targets.append(Move(True, 2, (1,1), (0,0)))
-targets.append(Move(True, 3, (1,1), (0,0)))
-targets.append(Move(True, 4, (1,1), (0,0)))
-targets.append(Move(True, 5, (1,1), (0,0)))
-targets.append(Move(True, 6, (1,1), (0,0)))
-targets.append(Move(True, 7, (1,1), (0,0)))
-targets.append(Move(True, 8, (1,1), (0,0)))
-
-targets.append(Move(True, 2, (2,1), (0,0)))
-targets.append(Move(True, 4, (2,1), (0,0)))
-targets.append(Move(True, 6, (2,1), (0,0)))
-targets.append(Move(True, 8, (2,1), (0,0)))
-
-assert(len(moves) == len(targets))
-
-for mv_target in targets:
-    found = False
-    for mv in moves:
-        if mv.recycling == mv_target.recycling and mv.type == mv_target.type and mv.pos == mv_target.pos and mv.pos_rec == mv_target.pos_rec:
-            found = True
-            break
-    assert(found == True)
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument("--width", type=int, default=8, required=False,help="Set the width of the board (default: 8)")
 parser.add_argument("--height", type=int, default=12, required=False,help="Set the height of the board (default: 12)")
@@ -71,6 +33,7 @@ parser.add_argument("--h2", type=str, default=["random"], nargs="*", required=Fa
 parser.add_argument("--run-type", type=str, default="standard", required=False,help="Indicate what to do (default: standard)(possible values: standard, win_rate, train)")
 parser.add_argument("--round", type=int, default=20, required=False,help="Set the number of round for win_rate runs (default: 20)")
 parser.add_argument("--dark-magic", default=False, action="store_true", required=False,help="Enable dark powered algorithms (default: False)")
+parser.add_argument("--invert-colors", default=False, action="store_true", required=False,help="Invert the color to [dot, color] (default: [color, dot])")
 args = parser.parse_args()
 def print_win_rate(win_rate, names=["AI 1", "AI 2"]):
     for i in range(3):
@@ -102,15 +65,17 @@ def load_vspace_heuristic(dm):
         raise NameError("No dark magic")
     return HeuristicVspace()
 def run_standard(args):
-    engine = Engine(args.width, args.height, dark_magic=args.dark_magic)
+    colors = [1, 0] if args.invert_colors else [0, 1]
+    engine = Engine(args.width, args.height, colors=colors, dark_magic=args.dark_magic)
     winner = engine.play(args.p1, args.p2)
     print("Winner is player ", (winner+1), ": ", engine.ais[winner].name)
     for mv in engine.previous_moves:
         print("play_move(engine, \"", mv.str_as_input(), "\")")
 def run_win_rate(args):
     win_rate = [0, 0, 0]
+    colors = [1, 0] if args.invert_colors else [0, 1]
     for i in range(args.round):
-        engine = Engine(args.width, args.height, dark_magic=args.dark_magic)
+        engine = Engine(args.width, args.height, colors=colors, dark_magic=args.dark_magic)
         winner = engine.play(args.p1, args.p2)
         for mv in engine.previous_moves:
             print("play_move(engine, \"", mv.str_as_input(), "\")")
@@ -145,7 +110,6 @@ if len(args.p2) > 0:
     args.p2 = loader_player[type_ai](args.p2, args.h2)
 
 runner[args.run_type](args)
-
 
 def test1():
     engine = Engine(dark_magic=True, colors=[1, 0])
@@ -313,18 +277,48 @@ def genetic():
    print(hof)
 
 # genetic()
-
-# engine = Engine(dark_magic=True)
-# h = HeuristicVspace()
-# p = MinMaxPlayer(h, 3, False)
-# p2 = MinMaxPlayer(h)
-# engine.initialize_player(p2, p)
+engine = Engine(dark_magic=True)
+h = HeuristicVspace()
+p = MinMaxPlayer(h, 3, False)
+p2 = MinMaxPlayer(h)
+engine.initialize_player(p2, p)
 # play_move(engine, "0 6 F 1")
-# cProfile.run('mv = p.play(1, engine)', "output_stat")
-# p = pstats.Stats('output_stat')
-# p.strip_dirs()
-# p.sort_stats('tottime')
-# p.print_stats()
+play_move(engine, "0 5 B 1")
+play_move(engine, "0 4 A 1")
+play_move(engine, "0 5 B 2")
+play_move(engine, "0 2 C 3")
+play_move(engine, "0 2 B 3")
+play_move(engine, "0 2 A 3")
+play_move(engine, "0 5 B 5")
+play_move(engine, "0 3 B 6")
+play_move(engine, "0 1 B 7")
+play_move(engine, "0 8 A 5")
+play_move(engine, "0 5 F 1")
+play_move(engine, "0 8 A 7")
+play_move(engine, "0 4 G 2")
+play_move(engine, "0 4 C 8")
+play_move(engine, "0 6 A 9")
+play_move(engine, "0 2 B 8")
+play_move(engine, "0 6 A 11")
+play_move(engine, "0 6 C 10")
+play_move(engine, "0 2 B 10")
+play_move(engine, "0 1 B 12")
+play_move(engine, "0 4 G 4")
+play_move(engine, "0 8 G 6")
+play_move(engine, "0 6 F 2")
+play_move(engine, "0 4 F 4")
+play_move(engine, "A 11 A 12 6 E 1")
+play_move(engine, "A 9 A 10 8 E 3")
+play_move(engine, "A 7 A 8 6 A 7")
+play_move(engine, "B 12 C 12 8 A 9")
+play_move(engine, "E 3 E 4 2 E 3")
+play_move(engine, "B 10 B 11 8 E 5")
+
+cProfile.run('mv = p.play(0, engine)', "output_stat")
+p = pstats.Stats('output_stat')
+p.strip_dirs()
+p.sort_stats('tottime')
+p.print_stats()
 # p.print_callers()
 # p.sort_stats('cumtime')
 # p.print_callees()
