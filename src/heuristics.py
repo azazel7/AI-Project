@@ -90,6 +90,18 @@ class HeuristicVspace():
             val *= -1
         return val
 
+class HeuristicMuggleVspace():
+    def __init__(self, weights=[0, 0, 0, 1000000, 0, 0.5, 5, 100000, 0, 1, 8, 100000]):
+        self.name = "vspace"
+        self.weights = np.array(weights)
+
+    def value(self, id_ai, engine):
+        id_next_ai = len(engine.previous_moves) % 2
+        val = magic.heuristic(engine.board, self.weights, engine.colors[id_next_ai])
+        if engine.colors[id_ai] == 1: #Our color is the dot
+            val *= -1
+        return val
+
 class HeuristicNeuralNetwork():
     def __init__(self, filename="", name = "neural"):
         self.name = name

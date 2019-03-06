@@ -20,6 +20,7 @@ Even though, feeding a sample file works with the program, I *do not* recommend
 it, because once the file is finish the `readline` function get stuck on empty
 lines.
 
+Note that the default colors are color for the first player and dot for the second. To invert this, use the parameter `--invert-colors`.
 For more information, you can use the parameter `-h` to get help message, but
 it is not very clear for now, especially for AI players.
 
