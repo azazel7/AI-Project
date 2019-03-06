@@ -22,7 +22,6 @@ class MinMaxPlayer:
     def __init__(self, heuristic, depth=3, sort_moves=False, name="MinMax"):
         self.name = name
         self.heuristic_object = heuristic
-        # print(depth)
         self.depth = int(depth)
         self.sort_moves = sort_moves
 
@@ -38,14 +37,25 @@ class MinMaxPlayer:
         else:
             moves = engine.available_moves()
             #Exploring some first moves
-            moves = [mv for mv in moves if (mv.pos[0] == 0 or mv.pos[0] < engine.width-1) and mv.type in {1, 3, 5, 7}]
+            # moves = [mv for mv in moves if (mv.pos[0] != 0 and mv.pos[0] != engine.width-1) and mv.type in {2, 4, 6, 8}]
             i = np.random.randint(0, len(moves))
             return moves[i]
 
         if isinstance(move[1], list):
             for mv in move[1]:
                 mv.print_as_input()
+            print("Value: ", move[0])
+            if len(move[1]) == 0:
+                print("No viable moves")
+                moves = engine.available_moves()
+                i = np.random.randint(0, len(moves))
+                return moves[i]
             return move[1][0]
+        if move[1] is None:
+            print("No viable moves")
+            moves = engine.available_moves()
+            i = np.random.randint(0, len(moves))
+            return moves[i]
         return move[1]
 
     def heuristic(self, id_ai, engine):
@@ -64,6 +74,12 @@ class MinMaxPlayer:
             current_val = self.heuristic(self.id_ai, engine)
             return (current_val, None)
 
+        winner = engine.is_winning()
+        if winner == engine.colors[id_ai]:
+            return (self.heuristic(self.id_ai, engine), None)
+        elif winner == engine.colors[(id_ai+1)%2]:
+            return (alpha, None)
+
         moves = engine.available_moves()
         s = sum([mv.recycling for mv in moves])
         if self.sort_moves:
@@ -79,33 +95,41 @@ class MinMaxPlayer:
             vlue = self.min((id_ai+1)%2, engine, depth-1, alpha, beta)
             engine.cancel_last_move()
             value = vlue[0] #Min return tuple
+
             if value > alpha:
+                if engine.previous_moves[-1].str_as_input() == "0 4 C 3" and engine.previous_moves[-2].str_as_input() == "0 4 A 3":
+                    print("(",depth, ") (",move.str_as_input(), ") Value: ", value)
+                    engine.do_move(move)
+                    engine.printy()
+                    engine.cancel_last_move()
                 #Create an history of the best moves found
-                l_move = [copy.deepcopy(move)]
-                if vlue[1] is not None:
-                    l_move.extend(vlue[1])
+                # l_move = [copy.deepcopy(move)]
+                # if vlue[1] is not None:
+                    # l_move.extend(vlue[1])
                 alpha = value
                 best_move = move
             if value >= beta:
-                # return (value, move)
-                return (value, l_move)
-        # return (alpha, best_move)
-        return (alpha, l_move)
+                return (value, move)
+                # return (value, l_move)
+        return (alpha, best_move)
+        # return (alpha, l_move)
 
     def min(self, id_ai, engine, depth, alpha, beta):
         if depth == 0:
             current_val = self.heuristic(self.id_ai, engine)
             return (current_val, None)
         #NOTE: disabled for now because it made the minmax acting stupdly
-        # if engine.is_winning() == engine.colors[id_ai]:
-            # return (-1000000, None)
+        winner = engine.is_winning()
+        if winner == engine.colors[id_ai]:
+            return (alpha, None)
+        elif winner == engine.colors[(id_ai+1)%2]:
+            return (self.heuristic(self.id_ai, engine), None)
+
         moves = engine.available_moves()
 
         if self.sort_moves:
             value = [self.value_move(engine, mv, self.id_ai) for mv in moves]
             best_opponent = min([mv[0] for mv in value])
-            if best_opponent <= -900000:
-                return (best_opponent, None)
             moves = [mv[1] for mv in sorted(value, key=itemgetter(0), reverse=True)]
 
         #Does the TA or the teacher of AI read this comment?
@@ -119,13 +143,13 @@ class MinMaxPlayer:
             value = vlue[0] #Min return tuple
             if value < beta:
                 #Create an history of the best moves found
-                l_move = [copy.deepcopy(move)]
-                if vlue[1] is not None:
-                    l_move.extend(vlue[1])
+                # l_move = [copy.deepcopy(move)]
+                # if vlue[1] is not None:
+                    # l_move.extend(vlue[1])
                 beta = value
                 best_move = move
             if value <= alpha:
-                # return (value, move)
-                return (value, l_move)
-        # return (beta, best_move)
-        return (beta, l_move)
+                return (value, move)
+                # return (value, l_move)
+        return (beta, best_move)
+        # return (beta, l_move)
