@@ -97,11 +97,6 @@ class MinMaxPlayer:
             value = vlue[0] #Min return tuple
 
             if value > alpha:
-                if engine.previous_moves[-1].str_as_input() == "0 4 C 3" and engine.previous_moves[-2].str_as_input() == "0 4 A 3":
-                    print("(",depth, ") (",move.str_as_input(), ") Value: ", value)
-                    engine.do_move(move)
-                    engine.printy()
-                    engine.cancel_last_move()
                 #Create an history of the best moves found
                 # l_move = [copy.deepcopy(move)]
                 # if vlue[1] is not None:
