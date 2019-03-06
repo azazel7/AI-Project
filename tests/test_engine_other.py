@@ -213,7 +213,7 @@ def test_available_moves2_magic():
         assert(found == True)
 
 def test_available_moves3_magic():
-    engine = Engine(3, 3, card_count=2)
+    engine = Engine(3, 3, card_count=2, dark_magic=True)
     mv = Move(False, 2, (0,0))
     engine.execute(mv)
     mv = Move(False, 1, (1,0))
