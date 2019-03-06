@@ -372,7 +372,7 @@ inline void count_line(int const x_start,
 			}
 		}
 		else{
-			if(val == 0){
+			if(val == 0){ //Value is empty
 				if(prev_val > 0){ //The previous value wasn't empty, so we need to count a line of size count[i]
 					for(int i = 0; i < 2; ++i){
 						if(count[i] > 0){
@@ -394,7 +394,7 @@ inline void count_line(int const x_start,
 				prev_offset[0] = prev_offset[1] = offset;
 				val_prev_poffset[0] = val_prev_poffset[1] = prev_val;
 			}
-			else if(prev_val == 0){
+			else if(prev_val == 0){ //Value is not empty but previous value was empty
 				count[0] = count[1] = 1;
 			}
 			else{
@@ -405,7 +405,7 @@ inline void count_line(int const x_start,
 						count[i] += 1;
 					}
 					else{
-						if(prev_offset[i] >= 0){
+						if(prev_offset[i] >= 0){ //Update the vspace
 							int const po = prev_offset[i];
 							int v = val_prev_poffset[i];
 							if(v != 0 && matching_cells[i][prev_val-1][v-1]) //If the value before the previous space match our current line, combine the vspace
@@ -415,6 +415,9 @@ inline void count_line(int const x_start,
 							prev_offset[i] = -1;
 							val_prev_poffset[i] = -1;
 						}
+						if(count[i] - 1 >= 4)
+							count[i] = 4;
+						align[i][count[i] - 1] += 1;
 						count[i] = 1;
 					}
 					if(count[i] == 4){ //TODO The win_length, but I don't have it here
@@ -455,11 +458,12 @@ static PyObject* heuristic(PyObject *dummy, PyObject *args)
 {
 	PyObject *arg_board=NULL, *arg_weights=NULL;
 	PyObject *npy_board=NULL, *npy_weights=NULL;
-	int next_player;
+	int next_player, prev_player;
 
 	if (!PyArg_ParseTuple(args, "OOi", &arg_board, &arg_weights, &next_player))
 		return NULL;
 
+	prev_player = (next_player+1)%2; //It is a two player so we can do the +1 to get previous player.
 	npy_board = PyArray_FROM_OTF(arg_board, NPY_DOUBLE, NPY_IN_ARRAY);
 	npy_weights = PyArray_FROM_OTF(arg_weights, NPY_DOUBLE, NPY_IN_ARRAY);
 
@@ -527,7 +531,6 @@ static PyObject* heuristic(PyObject *dummy, PyObject *args)
 	double* weight_vspace = weights+4;
 	double* weight_vspace_avail = weights+8;
 
-	
 	/*for(int y = shape_board[1]-1; y >= 0; --y){*/
 		/*for(int x = 0; x < shape_board[0]; ++x){*/
 			/*printf("%d", valuable_space[0][x*shape_board[1]+y]);*/
@@ -550,24 +553,29 @@ static PyObject* heuristic(PyObject *dummy, PyObject *args)
 		/*printf("Vspace av: ");*/
 		/*for(int x = 0; x < 4; ++x)*/
 			/*printf("%d ", valuable_space_count_avail[i][x]);*/
-		/*printf("\n");*/
+		/*printf("\n=====\n");*/
 	/*}*/
 
 	double values[2] = {0};
-	for(int i = 0; i < 2; ++i){
-		for(int x = 0; x < 4; ++x){
-			values[i] += weight_align[x] * (double)align[i][x];
-			values[i] += weight_vspace[x] * (double)valuable_space_count[i][x];
-			if(i == next_player){
-				int const xx = x < 3 ? x+1 : 3;
-				values[i] += weight_align[xx] * (double)valuable_space_count_avail[i][x];
+	if(align[prev_player][3] >= 1){
+		values[prev_player] += align[prev_player][3] * weight_align[3];
+	}
+	else{
+		for(int i = 0; i < 2; ++i){
+			for(int x = 0; x < 4; ++x){
+				values[i] += weight_align[x] * (double)align[i][x];
+				values[i] += weight_vspace[x] * (double)valuable_space_count[i][x];
+				if(i == next_player){
+					int const xx = x < 3 ? x+1 : 3;
+					values[i] += weight_align[xx] * (double)valuable_space_count_avail[i][x];
+				}
+				else{
+					values[i] += weight_vspace_avail[x] * (double)valuable_space_count_avail[i][x];
+				}
 			}
-			else{
-				values[i] += weight_vspace_avail[x] * (double)valuable_space_count_avail[i][x];
-			}
-
 		}
 	}
+	/*printf("Value color %f\nValue dot %f\n", values[0], values[1]);*/
 
     Py_DECREF(npy_board);
 	Py_DECREF(npy_weights);
