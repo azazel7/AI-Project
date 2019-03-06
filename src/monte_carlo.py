@@ -62,6 +62,8 @@ class MonteCarloPlayer:
         if depth == 0:
             current_val = self.heuristic(self.id_ai, engine)
             return (current_val, None)
+        if engine.is_winning() == engine.colors[id_ai]:
+            return (self.heuristic(self.id_ai, engine), None)
         moves = engine.available_moves()
 
         value = [self.value_move(engine, mv, id_ai) for mv in moves]
