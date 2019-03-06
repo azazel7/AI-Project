@@ -149,3 +149,27 @@ class HeuristicNeuralNetwork():
         value = self.nn.predict_proba([board])[0][engine.colors[id_ai]]
         # print(self.nn.predict_proba([board]))
         return value
+
+class HeuristicDemo():
+    def __init__(self):
+        self.name = "Demo"
+
+    def value(self, id_ai, engine):
+        shape = engine.board.shape
+
+        sum_val = 0
+        for y in range(shape[1]):
+            for x in range(shape[0]):
+                idx = y * 10 + x + 1
+                board_val = engine.board[(x, y)]
+                if board_val > 0:
+                    if board_val == 1: #red cross
+                        sum_val -= 2 * idx
+                    elif board_val == 2: #red circle
+                        sum_val -= 1.5 * idx
+                    elif board_val == 3: # white cross
+                        sum_val += 3*idx
+                    elif board_val == 4: # white circle
+                        sum_val += idx
+        return sum_val
+
