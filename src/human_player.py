@@ -53,7 +53,7 @@ class HumanPlayer:
         while True:
             print('(\033[33m' + self.name + '\033[00m) Move: ', end='', flush=True)
             line = sys.stdin.readline()
-            print(line)
+            # print(line)
             move = self.match_move(line)
             #If the move has been chosen, check if it's legal
             if move is not None:
@@ -63,3 +63,14 @@ class HumanPlayer:
                     print("Illegal move")
             else:
                 print("Wrong input")
+
+    def __setstate__(self,serial):
+        self.name = serial
+        pattern = "^0 ([1-8]) ([A-H]|[a-h]) ([1-9]$|1[0-2]$)"
+        self.re_regular = re.compile(pattern)
+        pattern = "^([A-H]|[a-h]) ([1-9]|1[0-2]) ([A-H]|[a-h]) ([1-9]|1[0-2]) ([1-8]) ([A-H]|[a-h]) ([1-9]$|1[0-2]$)"
+        self.re_recycling = re.compile(pattern)
+
+    def __getstate__(self):
+        return self.name
+
