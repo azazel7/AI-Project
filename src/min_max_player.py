@@ -23,7 +23,10 @@ class MinMaxPlayer:
         self.name = name
         self.heuristic_object = heuristic
         self.depth = int(depth)
-        self.sort_moves = sort_moves
+        if isinstance(sort_moves, bool):
+            self.sort_moves = sort_moves
+        else:
+            self.sort_moves = (sort_moves == 1)
 
     @timeit
     def play(self, id_ai, engine):
@@ -32,14 +35,15 @@ class MinMaxPlayer:
         self.average_number_of_moves = 0
         self.number_of_state = 0
         self.heuristic_called_count = 0
-        if len(engine.previous_moves) > 0:
-            move = self.max(id_ai, engine, self.depth, -100000000, 100000000)
-        else:
-            moves = engine.available_moves()
+        move = self.max(id_ai, engine, self.depth, -100000000, 100000000)
+        # if len(engine.previous_moves) > 0:
+            # move = self.max(id_ai, engine, self.depth, -100000000, 100000000)
+        # else:
+            # moves = engine.available_moves()
             #Exploring some first moves
             # moves = [mv for mv in moves if (mv.pos[0] != 0 and mv.pos[0] != engine.width-1) and mv.type in {2, 4, 6, 8}]
-            i = np.random.randint(0, len(moves))
-            return moves[i]
+            # i = np.random.randint(0, len(moves))
+            # return moves[i]
 
         if isinstance(move[1], list):
             for mv in move[1]:
