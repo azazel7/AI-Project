@@ -20,10 +20,10 @@ import magic
 parser = argparse.ArgumentParser(description='Run the Double Card game.')
 parser.add_argument("--width", type=int, default=8, required=False,help="Set the width of the board (default: 8)")
 parser.add_argument("--height", type=int, default=12, required=False,help="Set the height of the board (default: 12)")
-parser.add_argument("--p1", type=str, default=["human"], nargs="*", required=False,help="Set the first player AI (default: human, demo_mm, demo_ab)")
+parser.add_argument("--p1", type=str, default=["human"], nargs="*", required=False,help="Set the first player AI (default: human, demo_mm, demo_ab, minmax, mc, random)")
 parser.add_argument("--h1", type=str, default=["random"], nargs="*", required=False,\
         help="Set the heuristic for the first player (default: random)(possible values are: basic, random, convolution, neural, vspace, demo)")
-parser.add_argument("--p2", type=str, default=["human"], nargs="*", required=False,help="Set the second player AI (default: human, demo_mm, demo_ab)")
+parser.add_argument("--p2", type=str, default=["human"], nargs="*", required=False,help="Set the second player AI (default: human, demo_mm, demo_ab, minmax, mc, random)")
 parser.add_argument("--h2", type=str, default=["random"], nargs="*", required=False,\
         help="Set the heuristic for the second player (default: random)(possible values are: basic, random, convolution, neural, vspace)")
 parser.add_argument("--run-type", type=str, default="standard", required=False,help="Indicate what to do (default: standard)(possible values: standard, win_rate, train)")
@@ -71,6 +71,7 @@ def load_vspace_heuristic(dm):
 
 #define the run functions
 def run_standard(args):
+    print(args)
     colors = [1, 0] if args.invert_colors else [0, 1]
     engine = Engine(args.width, args.height, colors=colors, dark_magic=args.dark_magic)
     winner = engine.play(args.p1, args.p2)
