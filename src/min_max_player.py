@@ -35,15 +35,15 @@ class MinMaxPlayer:
         self.average_number_of_moves = 0
         self.number_of_state = 0
         self.heuristic_called_count = 0
-        move = self.max(id_ai, engine, self.depth, -100000000, 100000000)
-        # if len(engine.previous_moves) > 0:
-            # move = self.max(id_ai, engine, self.depth, -100000000, 100000000)
-        # else:
-            # moves = engine.available_moves()
-            #Exploring some first moves
-            # moves = [mv for mv in moves if (mv.pos[0] != 0 and mv.pos[0] != engine.width-1) and mv.type in {2, 4, 6, 8}]
-            # i = np.random.randint(0, len(moves))
-            # return moves[i]
+        self.stop_time = time.time()+5.97
+        if len(engine.previous_moves) > 0:
+            move = self.max(id_ai, engine, self.depth, -100000000, 100000000)
+        else:
+            moves = engine.available_moves()
+            # Exploring some first moves
+            moves = [mv for mv in moves if (mv.pos[0] != 0 and mv.pos[0] != engine.width-1) and mv.type in {2, 4, 6, 8}]
+            i = np.random.randint(0, len(moves))
+            return moves[i]
 
         if isinstance(move[1], list):
             for mv in move[1]:
@@ -110,6 +110,9 @@ class MinMaxPlayer:
             if value >= beta:
                 return (value, move)
                 # return (value, l_move)
+            if time.time() > self.stop_time:
+                return (alpha, best_move)
+
         return (alpha, best_move)
         # return (alpha, l_move)
 
@@ -150,5 +153,7 @@ class MinMaxPlayer:
             if value <= alpha:
                 return (value, move)
                 # return (value, l_move)
+            if time.time() > self.stop_time:
+                return (beta, best_move)
         return (beta, best_move)
         # return (beta, l_move)
