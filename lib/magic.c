@@ -346,7 +346,7 @@ inline void count_line(int const x_start,
 	int prev_offset[2] = {-1, -1};
 	int val_prev_poffset[2] = {-1, -1};
 	int count[2];
-#define safe_size_temp_line (12+8)
+    #define safe_size_temp_line (12+8)
 	int tmp_vspaces[2][safe_size_temp_line]; //12+8 is just to be sure we have enough space
 	for(int i = 0; i < 2; ++i)
 		for(int j = 0; j < safe_size_temp_line; ++j)
@@ -582,6 +582,128 @@ static PyObject* heuristic(PyObject *dummy, PyObject *args)
 	return PyInt_FromLong(values[0] - values[1]);
 }
 
+inline void winning_count(int const x_start,
+					   int const y_start,
+ 					   int const x_offset_mul,
+					   int const y_offset_mul,
+					   double const* board,
+					   npy_intp const* shape_board,
+					   int align[2][4])
+{
+	int offset = 0;
+
+	int prev_val = -1;
+	int prev_offset[2] = {-1, -1};
+	int val_prev_poffset[2] = {-1, -1};
+	int count[2];
+	do{	
+		//Compute the current x and y
+		int x = x_start + offset*x_offset_mul;
+		int y = y_start + offset*y_offset_mul;
+		//Check if this position is on the board
+		if(x < 0 || x >= shape_board[0] || y < 0 || y >= shape_board[1]){
+			break;
+		}
+		//Get the real index and the current value
+		int idx = x*shape_board[1] + y;
+		int val = board[idx];
+		/*First turn, we need to initialize count*/
+		if(prev_val == -1){
+			if(val != 0)
+				count[0] = count[1] = 1;
+			else
+				count[0] = count[1] = 0;
+		}
+		else{
+			if(val == 0){ //Value is empty
+				if(prev_val > 0){ //The previous value wasn't empty, so we need to count a line of size count[i]
+					for(int i = 0; i < 2; ++i){
+						if(count[i] > 0)
+							align[i][count[i]-1] += 1;
+					}
+				}
+				count[0] = count[1] = 0;
+			}
+			else if(prev_val == 0){ //Value is not empty but previous value was empty
+				count[0] = count[1] = 1;
+			}
+			else{
+				/*For both color and dot, check if the previous value match the current value so the serie keep going.*/
+				/*For instance, if prev_val and val indicate the same color or the same type of dot.*/
+				for(int i = 0; i < 2; ++i){
+					if (matching_cells[i][prev_val-1][val-1]){
+						count[i] += 1;
+					}
+					else{
+						if(count[i] - 1 >= 4)
+							count[i] = 4;
+						align[i][count[i] - 1] += 1;
+						count[i] = 1;
+					}
+					if(count[i] == 4){ //TODO The win_length, but I don't have it here
+						align[i][3] += 1;
+					}
+				}
+			}
+		}
+		prev_val = val;
+		offset +=1;
+	}while(1);
+	if(prev_val > 0){ //The previous value wasn't empty, so we need to count a line of size count[i]
+		for(int i = 0; i < 2; ++i){
+			if(count[i] > 0)
+				align[i][count[i]-1] += 1;
+		}
+	}
+}
+static PyObject* is_winning(PyObject *dummy, PyObject *args)
+{
+	PyObject *arg_board=NULL;
+	PyObject *npy_board=NULL;
+
+	if (!PyArg_ParseTuple(args, "O", &arg_board))
+		return NULL;
+
+	npy_board = PyArray_FROM_OTF(arg_board, NPY_DOUBLE, NPY_IN_ARRAY);
+	npy_intp *shape_board = PyArray_SHAPE(npy_board);
+
+	double const* board = PyArray_DATA(npy_board);
+	int align[2][4]; //Contains the distribution of alignment length
+	for(int i = 0; i < 2; ++i)
+		for(int j = 0; j < 4; ++j)
+			align[i][j] = 0;
+	for(int col = 0; col < shape_board[0]; ++col){
+		//Check column from (col, 0)
+		winning_count(col, 0, 0, 1, board, shape_board, align);
+		//Check diagonal from (col, 0)
+		winning_count(col, 0, 1, 1, board, shape_board, align);
+		//Check cdiagonal from (col, 0)
+		winning_count(col, 0, -1, 1, board, shape_board, align);
+		if(col > 0 && col < 7){
+			winning_count(col, shape_board[1] - 1, -1, -1, board, shape_board, align);
+			winning_count(col, shape_board[1] - 1,  1, -1, board, shape_board, align);
+		}
+	}
+	for(int row = 0; row < shape_board[1]; ++row){
+		//Check row from (0, row)
+		winning_count(0, row, 1, 0, board, shape_board, align);
+		if(row > 7){
+			//Check diagonal from (0, row)
+			winning_count(0, row, 1, -1, board, shape_board, align);
+			//Check cdiagonal from (shape_board[0]-1, row)
+			winning_count(shape_board[0]-1, row, -1, -1, board, shape_board, align);
+		}
+	}
+
+    Py_DECREF(npy_board);
+	if(align[0][3] > 0 && align[1][3] > 0)
+		return PyInt_FromLong(2);
+	if(align[0][3] > 0)
+		return PyInt_FromLong(0);
+	if(align[1][3] > 0)
+		return PyInt_FromLong(1);
+	return PyInt_FromLong(-1);
+}
 static PyObject* possible_regular_move(PyObject *dummy, PyObject *args)
 {
 	PyObject *arg_board=NULL;
@@ -863,6 +985,10 @@ static PyMethodDef magic_methods[] = {
         {
                 "cancel_move", cancel_move, METH_VARARGS,
                 "Cancel a move.",
+        },
+        {
+                "is_winning", is_winning, METH_VARARGS,
+                "Check winning conditions.",
         },
         {NULL, NULL, 0, NULL}
 };

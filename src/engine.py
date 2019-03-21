@@ -5,7 +5,7 @@ from scipy import misc
 import magic
 
 class Engine:
-    def __init__(self, width=8, height=12, card_count=24, max_turn=60, colors=[0,1], dark_magic=False):
+    def __init__(self, width=8, height=12, card_count=24, max_turn=40, colors=[0,1], dark_magic=False, verbose=True):
         self.width = width
         self.height = height
         self.board = np.zeros((width, height), dtype=np.int8)
@@ -15,6 +15,7 @@ class Engine:
         self.previous_moves = []
         self.win_length = 4
         self.colors = colors
+        self.verbose = verbose
         self.dark_magic = dark_magic
         #matching_cells describes how cells can form lines together.
         #for instance, a cell with 1 (red with filled dot) share the same color as 2 (red with empty dot)
@@ -449,6 +450,18 @@ class Engine:
          1: Dot
          2: tie
         '''
+        if self.dark_magic:
+            ret = magic.is_winning(self.board)
+            if ret == 0:
+                return 0
+            if ret == 1:
+                return 1
+            if ret == 2:
+                player_idx = (len(self.previous_moves)-1)%2
+                return self.colors[player_idx]
+            if len(self.previous_moves) > 60:
+                return 2
+            return -1
         #NOTE: To move later as attribute
         board_color = np.array([[0,0], [-1, -1], [-1, 1], [1, -1], [1, 1]])
         board_remaped = board_color[self.board]
@@ -497,6 +510,8 @@ class Engine:
         self.ais = [player1, player2]
 
     def play(self, player1, player2):
+        import cProfile
+        import pstats
         '''Return which player has won.
         -1: nobody
          0: Color
@@ -508,10 +523,10 @@ class Engine:
         current_turn = 0
         while True:
             move = self.ais[current_player].play(current_player, self) #Call the player function
-            print("Turn: ", current_turn," ",self.card_count, " -> player ", self.ais[current_player].name, "(", current_player+1, ")")
-            move.print_as_input()
+            if self.verbose:
+                print("Turn: ", current_turn," ( card:",self.card_count, ") -> player ", self.ais[current_player].name, "(", current_player+1, ")")
+                move.print_as_input()
             legal_move = self.execute(move)
-            self.printy()
             if not legal_move:
                 continue
 
