@@ -5,6 +5,8 @@
 \documentclass[runningheads]{llncs}
 %
 \usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{matrix}
 % Used for displaying a sample figure. If possible, figure files should
 % be included in EPS format.
 %
@@ -17,13 +19,311 @@
 \title{COMP 6721: Project Report}
 \author{Martin Khannouz}
 %
-%\authorrunning{COMP 472 [or COMP 6721] F. Author et al.}
 \institute{40093517 \email{martin.khannouz@gmail.com}}
 %
 \maketitle              % typeset the header of the contribution
 %
-\section{First Section}
-\subsection{A Subsection Sample}
+\section*{Introduction}
+This project report describes how the first
+project of \textit{Introduction to Artificial
+Intelligence} were developed. The first section
+covers the environment and the tools used for the
+project. The heuristic section describes each
+heuristic and how they were improved. The
+difficulties section summerizes the difficulties
+encountered during the project and how they were
+overcome.
+
+\section{Settings and Structures}
+\subsection{Settings}
+The developing part of this project was realized
+on an Archlinux distribution with Python~3.7.2.
+Vim with a Jedi plugin was used for the coding
+part and a private Github repository was set to
+keep track of the changes.
+The \textit{orwell} machine was used before each
+deliverable to ensure the project worked with the
+software version on Concordia's computers. Pytest
+was used to guarantee no regression has been made.
+
+\subsection{stucture}
+The project is structured in classes with
+the main one being the engine. This class is an
+instance of the game that implements the rules.
+To ensure this class operates properly, unit tests
+were implemented before the class methods, based on
+the use cases given by the teacher.
+This class was optimized as much as possible to
+guarantee the fastest execution time for minimax
+player.
+
+The project also contains three type of players. A
+\textit{Human} player that parse the input from the command
+line. A \textit{MinMax} player that implement tweaked
+minimax version with alpha-beta pruning. The
+\textit{MonteCarlo} player which was supposed to implement
+a Monte Carlo Tree Search even though it was a
+complete failure due to the poor understanding of
+this algorithm by the author of the project. Finally, a random player was
+developed during the early stage of the project.
+This "algorithm" served as control test for other
+player types, because none of them should lost
+against such chaotic player\footnote{Based on my
+statistics, even a 5-years old kid should get a
+win rate of 50\%.}.
+
+Automatic players (\textit{MinMax} and
+\textit{MonteCarlo}) rely on heuristic to complete
+their search. All heuristic functions are grouped
+in one file: \textit{heuristic.py}.
+Finally, the class \textit{Move} represents a move
+that could be played.
+
+In addition to these classes, additional functions
+were implemented. One function used genetic
+algorithms to optimize the \textit{Vspace}
+heuristic, but it was too slow and just gave hint
+on how to enhance the heuristic rather than a
+accurate weights.  A win rate function was also
+implemented to compare combinations of player and
+heuristic against each other.
+
+\section{Heuristics}
+Five heuristics were developed in this project
+even though only two were made for competitive
+use. One heuristic is the naive function for the
+second deliverable. Another is a random heuristic
+that systematicaly return a new random number. It
+was used to spot runtime errors in \textit{MinMax} and
+\textit{MonteCarlo} algorithms. The \textit{Basic}
+heuristics only check for winning situation and
+was used for basic controls.
+The two other heuristics are described in
+subsection of their own.
+
+\subsection{Convolution}
+The convolution utilize the \textit{convolve2d} function
+from Scipy to estimate the value of a current
+state.
+The game board is split into two matrices: dot and
+color. Each matrix contains -1, 0, or 1. A zero
+indicates an empty space while the two other values
+represent either a filled dot and an empty dot, or
+a white cell and a red cell.
+Applying \textit{convolve2d} on these matrices
+produces new matrices with values that range from
+-4 to 4. An absolute value of four indicates a row
+of four and therefore, a winning position.
+The heuristic gathers all intermediate values into
+an histogram (using the \textit{histogram}
+function of numpy) then give a weight to each
+value.
+
+Figure~\ref{fig:board-example} shows an example of
+the board. Figure~\ref{fig:dot-representation}
+focus on the dot player and show the
+transformation applied to the board for this
+player. Filled dots are set to 1 and circles to
+-1. Zeros are not represented for more clarity.
+The heuristic applies four convolutions: one for
+the rows, one for the columns and one for each
+diagonal. These convolution generate four smaller
+matrices showed in
+Figure~\ref{fig:convolution-results}.  Then, the
+matrices are flatened, concateneted and the
+absolute value is applied to every cell. Finally
+the histogram is built out of this matrix and each
+element is multiplied by a weight before being
+summed.  The final
+value of the board is the difference between the
+two player values.
+
+This approach is strong for many reason. It is
+faster than calling python code because Scipy and
+Numpy rely on C writen functions. Uncomplete rows
+that contain zeros are more valued than uncomplete
+rows that contain opposite values. 
+\begin{figure}[ht]
+		\center
+		\begin{tikzpicture}
+
+				\node [draw, fill=red!20, minimum width=0.5cm, minimum height=0.5cm] at (0, 0) {$\bullet$};
+				\node [draw, fill=red!20, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 0) {$\circ$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.0, 0) {};
+				\node [draw, fill=red!20, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 0) {$\bullet$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (2.0, 0) {};
+
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0, 0.5) {$\circ$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 0.5) {$\bullet$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.0, 0.5) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 0.5) {$\circ$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (2.0, 0.5) {};
+
+
+				\node [draw, fill=red!20, minimum width=0.5cm, minimum height=0.5cm] at (0, 1) {$\circ$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 1) {$\circ$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.0, 1) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 1) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (2.0, 1) {};
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0, 1.5) {$\bullet$};
+				\node [draw, fill=red!20, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 1.5) {$\bullet$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.0, 1.5) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 1.5) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (2.0, 1.5) {};
+
+		\end{tikzpicture}
+		\caption{An example of a board game. Cards are not represented.}
+		\label{fig:board-example}
+\end{figure}
+\begin{figure}[ht]
+		\center
+		\begin{tikzpicture}
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0, 0) {$\bullet$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 0) {$\circ$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.0, 0) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 0) {$\bullet$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (2.0, 0) {};
+
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0, 0.5) {$\circ$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 0.5) {$\bullet$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.0, 0.5) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 0.5) {$\circ$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (2.0, 0.5) {};
+
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0, 1) {$\circ$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 1) {$\circ$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.0, 1) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 1) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] (A) at (2.0, 1) {};
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0, 1.5) {$\bullet$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 1.5) {$\bullet$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.0, 1.5) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 1.5) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (2.0, 1.5) {};
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5, 0) {1};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5.5, 0) {-1};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (6.0, 0) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (6.5, 0) {1};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (7.0, 0) {};
+
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5, 0.5) {-1};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5.5, 0.5) {1};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (6.0, 0.5) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (6.5, 0.5) {-1};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (7.0, 0.5) {};
+
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] (B) at (5, 1) {-1};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5.5, 1) {-1};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (6.0, 1) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (6.5, 1) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (7.0, 1) {};
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5, 1.5) {1};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5.5, 1.5) {1};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (6.0, 1.5) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (6.5, 1.5) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (7.0, 1.5) {};
+
+				\draw [->,thick] (A) -- (B);
+		\end{tikzpicture}
+		\caption{Example of transformation for the dot player based on the board in Figure~\ref{fig:board-example}.}
+		\label{fig:dot-representation}
+\end{figure}
+\begin{figure}[ht]
+		\center
+		\begin{tikzpicture}
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0, 0) {1};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 0) {0};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0, 0.5) {-1};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 0.5) {0};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0, 1) {-2};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 1) {-1};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0, 1.5) {2};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 1.5) {1};
+
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 0) {0};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (2.0, 0) {0};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (2.5, 0) {0};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (3.0, 0) {0};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] (C1) at (3.5, 0) {0};
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 1) {1};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (2.0, 1) {0};
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (3.0, 1) {2};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] (C0) at (3.5, 1) {-1};
+
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] (H0) at (7.0, 0) {8};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (7.5, 0) {6};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (8.0, 0) {3};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (8.5, 0) {0};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (9.0, 0) {0};
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] (W0) at (7.0, 0.75) {0};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] (W1) at (7.5, 0.75) {1};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] (W2) at (8.0, 0.75) {8};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] (W3) at (8.53, 0.75) {16};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] (W4) at (9.15, 0.75) {$10^6$};
+				\node at (10.5, 0.75) {Weights};
+				\node at (10.5, 0) {Histogram};
+				\node at (10.5, -0.5) {Indexes};
+
+				\node at (7.0, -0.5) {0};
+				\node at (7.5, -0.5) {1};
+				\node at (8.0, -0.5) {2};
+				\node at (8.5, -0.5) {3};
+				\node at (9.0, -0.5) {4};
+
+				\node (ID0) at (7.0, 2) {$\underbrace{0\times8} + $};
+				\node (ID1) at (8.0, 2) {$\underbrace{1\times6} +$};
+				\node (ID2) at (9.0, 2) {$\underbrace{8\times3} +$};
+				\node (ID3) at (10.15, 2) {$\underbrace{16\times0} +$};
+				\node (ID4) at (11.35, 2) {$\underbrace{10^6 \times 0}$};
+				\node (ID5) at (12.5, 2.10) {$ = 30$};
+
+				\draw [->,thick] (W0) -- (ID0);
+				\draw [->,thick] (W1) -- (ID1);
+				\draw [->,thick] (W2) -- (ID2);
+				\draw [->,thick] (W3) -- (ID3);
+				\draw [->,thick] (W4) -- (ID4);
+
+				
+				\draw [->,thick] (C0) -- (H0);
+				\draw [->,thick] (C1) -- (H0);
+		\end{tikzpicture}
+		\caption{The four matrices obtained after applying the four masks on the matrix that represent the dot, in Figure~\ref{fig:dot-representation}.
+						This Figure also represents the conversion to an histogram and how this histogram is used to find the heuristic value for the dot player.}
+		\label{fig:convolution-results}
+\end{figure}
+
+\subsection{Vspace}
+The Vspace heuristic tries to give value to empty
+cells in addition to counting rows of similar
+symbols. This heuristic count the number of lines
+and their sizes.
+\section{Difficulties}
+\begin{itemize}
+		\item Slowness of python, (numpy first)
+		\item Version changing between Python 3.7.2 and 3.5.1 (serialization of regex)
+\end{itemize}
+\section{Analyze}
+\begin{itemize}
+		\item How is the pruning.
+		\item How are the performance at the tournament.
+\end{itemize}
+\section{A Subsection Sample}
 Please note that the first paragraph of a section or subsection is
 not indented. The first paragraph that follows a table, figure,
 equation etc. does not need an indent, either.
