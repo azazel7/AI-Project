@@ -337,7 +337,7 @@ inline void count_line(int const x_start,
 					   int const y_offset_mul,
 					   double const* board,
 					   npy_intp const* shape_board,
-					   int align[2][4],
+					   int align[2][10],
 					   int valuable_space[2][96])
 {
 	int offset = 0;
@@ -477,7 +477,7 @@ static PyObject* heuristic(PyObject *dummy, PyObject *args)
 		for(int j = 0; j < shape_board[0] * shape_board[1]; ++j)
 			valuable_space[i][j] = 0;
 	
-	int align[2][4]; //Contains the distribution of alignment length
+	int align[2][10]; //Contains the distribution of alignment length
 	for(int i = 0; i < 2; ++i)
 		for(int j = 0; j < 4; ++j)
 			align[i][j] = 0;
@@ -588,7 +588,7 @@ inline void winning_count(int const x_start,
 					   int const y_offset_mul,
 					   double const* board,
 					   npy_intp const* shape_board,
-					   int align[2][4])
+					   int align[2][10])
 {
 	int offset = 0;
 
@@ -668,9 +668,9 @@ static PyObject* is_winning(PyObject *dummy, PyObject *args)
 	npy_intp *shape_board = PyArray_SHAPE(npy_board);
 
 	double const* board = PyArray_DATA(npy_board);
-	int align[2][4]; //Contains the distribution of alignment length
+	int align[2][10]; //Contains the distribution of alignment length
 	for(int i = 0; i < 2; ++i)
-		for(int j = 0; j < 4; ++j)
+		for(int j = 0; j < 10; ++j)
 			align[i][j] = 0;
 	for(int col = 0; col < shape_board[0]; ++col){
 		//Check column from (col, 0)
