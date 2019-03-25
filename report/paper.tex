@@ -26,7 +26,7 @@
 \section*{Introduction}
 This project report describes how the first
 project of \textit{Introduction to Artificial
-Intelligence} were developed. The first section
+Intelligence} was developed. The first section
 covers the environment and the tools used for the
 project. The heuristic section describes each
 heuristic and how they were improved. The
@@ -38,8 +38,7 @@ overcome.
 \subsection{Settings}
 The developing part of this project was realized
 on an Archlinux distribution with Python~3.7.2.
-Vim with a Jedi plugin was used for the coding
-part and a private Github repository was set to
+Vim with the Jedi plugin was used to code and a private Github repository was set to
 keep track of the changes.
 The \textit{orwell} machine was used before each
 deliverable to ensure the project worked with the
@@ -48,14 +47,14 @@ was used to guarantee no regression has been made.
 
 \subsection{stucture}
 The project is structured in classes with
-the main one being the engine. This class is an
-instance of the game that implements the rules.
+the main one representating the engine. This class is an
+instance of the game and implements the rules.
 To ensure this class operates properly, unit tests
 were implemented before the class methods, based on
 the use cases given by the teacher.
 This class was optimized as much as possible to
 guarantee the fastest execution time for minimax
-player.
+algorithm.
 
 The project also contains three type of players. A
 \textit{Human} player that parse the input from the command
@@ -86,7 +85,9 @@ heuristic, but it was too slow and just gave hint
 on how to enhance the heuristic rather than a
 accurate weights.  A win rate function was also
 implemented to compare combinations of player and
-heuristic against each other.
+heuristic against each other. Finally, a non
+tweaked MinMax version was developed for
+deliverable 2.
 
 \section{Heuristics}
 Five heuristics were developed in this project
@@ -112,12 +113,14 @@ represent either a filled dot and an empty dot, or
 a white cell and a red cell.
 Applying \textit{convolve2d} on these matrices
 produces new matrices with values that range from
--4 to 4. An absolute value of four indicates a row
+-4 to 4. A cell with an absolute value of four indicates a row
 of four and therefore, a winning position.
 The heuristic gathers all intermediate values into
 an histogram (using the \textit{histogram}
 function of numpy) then give a weight to each
-value.
+value. For instance, a weight of 16 was given to
+each intermediate value of 3 which represent a row
+of three.
 
 Figure~\ref{fig:board-example} shows an example of
 the board. Figure~\ref{fig:dot-representation}
@@ -126,11 +129,11 @@ transformation applied to the board for this
 player. Filled dots are set to 1 and circles to
 -1. Zeros are not represented for more clarity.
 The heuristic applies four convolutions: one for
-the rows, one for the columns and one for each
+the rows, another for the columns and one for each
 diagonal. These convolution generate four smaller
 matrices showed in
-Figure~\ref{fig:convolution-results}.  Then, the
-matrices are flatened, concateneted and the
+Figure~\ref{fig:convolution-results} (left side).
+The matrices are then flatened, concateneted and the
 absolute value is applied to every cell. Finally
 the histogram is built out of this matrix and each
 element is multiplied by a weight before being
@@ -142,7 +145,11 @@ This approach is strong for many reason. It is
 faster than calling python code because Scipy and
 Numpy rely on C writen functions. Uncomplete rows
 that contain zeros are more valued than uncomplete
-rows that contain opposite values. 
+rows that contain opposite values. Finally,
+because the convolution mask is applied to empty
+spaces, the heuristic can build complexe
+structures with space in the middle or above.
+
 \begin{figure}[ht]
 		\center
 		\begin{tikzpicture}
@@ -308,11 +315,179 @@ rows that contain opposite values.
 		\label{fig:convolution-results}
 \end{figure}
 
+\clearpage
 \subsection{Vspace}
-The Vspace heuristic tries to give value to empty
+The goal of the Vspace heuristic is to give value to empty
 cells in addition to counting rows of similar
-symbols. This heuristic count the number of lines
-and their sizes.
+symbols. Similarly to the previous heuristic,
+Vspace count the size of the lines, but for every
+line connected to an empty cell, it uses the
+size of this line as a value for the empty cell.
+
+Figure~\ref{fig:dot-vspace} and
+Figure~\ref{fig:color-vspace} give examples on
+how the spaces are valued for both players, based
+on the board at Figure~\ref{fig:board-example}.
+Figure~\ref{fig:color-vspace} shows that even if
+the line is split in two with an empty cell in the
+middle, the combine value of both side gives the
+value of the space. This is the reason why the two
+3-values appears even though there is no line of
+three.
+
+Possible value for spaces range from 0 to 4 and
+higher values are downed to 4. When multiple lines
+are connected to an empty cell, the cell receives
+the maximum value from them. The heuristic split the
+space in two categories: the space available in
+the next turn and the spaces too high to be reach
+with one card.
+
+Finally, an histogram for each category is made and
+each value is multiplied by a weight then summed.
+Note that the two categories have different
+weights, because a space connected to a line of
+three symboles does not hold the same value if you
+can play on it on the next turn or not.
+\begin{figure}[ht]
+		\center
+		\begin{tikzpicture}
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0, 0) {$\bullet$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 0) {$\circ$};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (1.0, 0) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 0) {$\bullet$};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (2.0, 0) {};
+
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0, 0.5) {$\circ$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 0.5) {$\bullet$};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (1.0, 0.5) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 0.5) {$\circ$};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (2.0, 0.5) {};
+
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0, 1) {$\circ$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 1) {$\circ$};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (1.0, 1) {};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 1) {};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] (A) at (2.0, 1) {};
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0, 1.5) {$\bullet$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 1.5) {$\bullet$};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (1.0, 1.5) {};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 1.5) {};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (2.0, 1.5) {};
+
+				%------
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5, 0) {$\bullet$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5.5, 0) {$\circ$};
+				\node [draw, fill=green!15, minimum width=0.5cm, minimum height=0.5cm] at (6.0, 0) {1};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (6.5, 0) {$\bullet$};
+				\node [draw, fill=green!15, minimum width=0.5cm, minimum height=0.5cm] at (7.0, 0) {1};
+
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5, 0.5) {$\circ$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5.5, 0.5) {$\bullet$};
+				\node [draw, fill=green!15, minimum width=0.5cm, minimum height=0.5cm] at (6.0, 0.5) {1};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (6.5, 0.5) {$\circ$};
+				\node [draw, fill=green!15, minimum width=0.5cm, minimum height=0.5cm] at (7.0, 0.5) {1};
+
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] (B) at (5, 1) {$\circ$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5.5, 1) {$\circ$};
+				\node [draw, fill=purple!25, minimum width=0.5cm, minimum height=0.5cm] at (6.0, 1) {2};
+				\node [draw, fill=green!15, minimum width=0.5cm, minimum height=0.5cm] at (6.5, 1) {1};
+				\node [draw, fill=purple!25, minimum width=0.5cm, minimum height=0.5cm] at (7.0, 1) {1};
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5, 1.5) {$\bullet$};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5.5, 1.5) {$\bullet$};
+				\node [draw, fill=purple!25, minimum width=0.5cm, minimum height=0.5cm] at (6.0, 1.5) {2};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (6.5, 1.5) {};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (7.0, 1.5) {};
+
+				\draw [->,thick] (A) -- (B);
+		\end{tikzpicture}
+		\caption{Example of the Vspace process for the
+		dot player based on the board in
+		Figure~\ref{fig:board-example}. the grey cells
+		represent cells that contain nothing
+		interesting. On the right board, green cells
+		are spaces available for the next turn and
+		purple cells are spaces that need at least two
+		cards to be filled.}
+		\label{fig:dot-vspace}
+\end{figure}
+\begin{figure}[ht]
+		\center
+		\begin{tikzpicture}
+
+				\node [draw, fill=red!20, minimum width=0.5cm, minimum height=0.5cm] at (0, 0) {};
+				\node [draw, fill=red!20, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 0) {};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (1.0, 0) {};
+				\node [draw, fill=red!20, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 0) {};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (2.0, 0) {};
+
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0, 0.5) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 0.5) {};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (1.0, 0.5) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 0.5) {};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (2.0, 0.5) {};
+
+
+				\node [draw, fill=red!20, minimum width=0.5cm, minimum height=0.5cm] at (0, 1) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 1) {};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (1.0, 1) {};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 1) {};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (2.0, 1) {};
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (0, 1.5) {};
+				\node [draw, fill=red!20, minimum width=0.5cm, minimum height=0.5cm] at (0.5, 1.5) {};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (1.0, 1.5) {};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (1.5, 1.5) {};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (2.0, 1.5) {};
+
+				%------
+				\node [draw, fill=red!20, minimum width=0.5cm, minimum height=0.5cm] at (5, 0) {};
+				\node [draw, fill=red!20, minimum width=0.5cm, minimum height=0.5cm] at (5.5, 0) {};
+				\node [draw, fill=green!15, minimum width=0.5cm, minimum height=0.5cm] at (6.0, 0) {3};
+				\node [draw, fill=red!20, minimum width=0.5cm, minimum height=0.5cm] at (6.5, 0) {};
+				\node [draw, fill=green!15, minimum width=0.5cm, minimum height=0.5cm] at (7.0, 0) {1};
+
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5, 0.5) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5.5, 0.5) {};
+				\node [draw, fill=green!15, minimum width=0.5cm, minimum height=0.5cm] at (6.0, 0.5) {3};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (6.5, 0.5) {};
+				\node [draw, fill=green!15, minimum width=0.5cm, minimum height=0.5cm] at (7.0, 0.5) {1};
+
+
+				\node [draw, fill=red!20, minimum width=0.5cm, minimum height=0.5cm] (B) at (5, 1) {};
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5.5, 1) {};
+				\node [draw, fill=purple!25, minimum width=0.5cm, minimum height=0.5cm] at (6.0, 1) {1};
+				\node [draw, fill=green!15, minimum width=0.5cm, minimum height=0.5cm] at (6.5, 1) {1};
+				\node [draw, fill=purple!25, minimum width=0.5cm, minimum height=0.5cm] at (7.0, 1) {1};
+
+				\node [draw, minimum width=0.5cm, minimum height=0.5cm] at (5, 1.5) {};
+				\node [draw, fill=red!20, minimum width=0.5cm, minimum height=0.5cm] at (5.5, 1.5) {$\bullet$};
+				\node [draw, fill=purple!25, minimum width=0.5cm, minimum height=0.5cm] at (6.0, 1.5) {2};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (6.5, 1.5) {};
+				\node [draw, fill=black!20, minimum width=0.5cm, minimum height=0.5cm] at (7.0, 1.5) {};
+
+				\draw [->,thick] (A) -- (B);
+		\end{tikzpicture}
+		\caption{Example of the Vspace process for the
+		color player based on the board in
+		Figure~\ref{fig:board-example}. the grey cells
+		represent cells that contain nothing
+		interesting. On the right board, green cells
+		are spaces available for the next turn and
+		purple cells are spaces that need at least two
+		cards to be filled.}
+		\label{fig:color-vspace}
+\end{figure}
+\clearpage
 \section{Difficulties}
 \begin{itemize}
 		\item Slowness of python, (numpy first)
@@ -320,9 +495,11 @@ and their sizes.
 \end{itemize}
 \section{Analyze}
 \begin{itemize}
-		\item How is the pruning.
+		\item How is the pruning depth 3 with a
+				recycling moves: no prun = 26s, prun=0.3s.
 		\item How are the performance at the tournament.
 \end{itemize}
+
 \section{A Subsection Sample}
 Please note that the first paragraph of a section or subsection is
 not indented. The first paragraph that follows a table, figure,
