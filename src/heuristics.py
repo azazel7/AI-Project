@@ -95,9 +95,158 @@ class HeuristicMuggleVspace():
         self.name = "vspace"
         self.weights = np.array(weights)
 
+
+    def count_line(self, x_start, y_start, x_offset_mul, y_offset_mul, board, shape_board, align, valuable_space, engine):
+        offset = 0
+        prev_val = -1
+        prev_offset = [-1, -1]
+        val_prev_poffset = [-1, -1]
+        count = [0, 0]
+        tmp_vspaces = [[0 for i in range(20)] for j in range(2)]
+
+        #start do while
+        while 1:
+            x = x_start + offset*x_offset_mul
+            y = y_start + offset*y_offset_mul
+            if x < 0 or x >= shape_board[0] or y < 0 or y >= shape_board[1]:
+                break
+            idx = x*shape_board[1] + y
+            val = board[idx]
+            if prev_val == -1:
+                if val != 0:
+                    count[0] = count[1] = 1
+                else:
+                    count[0] = count[1] = 0
+                    prev_offset[0] = prev_offset[1] = offset
+            else:
+                if val == 0: #Value is empty
+                    if prev_val > 0: #The previous value wasn't empty, so we need to count a line of size count[i]
+                        for i in range(2):
+                            if count[i] > 0:
+                                align[i][count[i]-1] += 1
+                                tmp_vspaces[i][offset] += count[i]
+
+                                if prev_offset[i] >= 0:
+                                    po = prev_offset[i]
+                                    v = val_prev_poffset[i]
+                                    is_matching = engine.matching_cells[i][prev_val-1][v-1]
+                                    if v > 0 and is_matching: #If the value before the previous space match our current line, combine the vspace
+                                        tmp_vspaces[i][po] += count[i]
+                                    else:
+                                        tmp_vspaces[i][po] = max(count[i], tmp_vspaces[i][po])
+                    count[0] = count[1] = 0
+                    prev_offset[0] = prev_offset[1] = offset
+                    val_prev_poffset[0] = val_prev_poffset[1] = prev_val
+                elif prev_val == 0: #Value is not empty but previous value was empty
+                        count[0] = count[1] = 1
+                else:
+                    #For both color and dot, check if the previous value match the current value so the serie keep going.
+                    #For instance, if prev_val and val indicate the same color or the same type of dot.
+                    for i in range(2):
+                        is_matching = engine.matching_cells[i][prev_val-1][val-1]
+                        if is_matching:
+                            count[i] += 1;
+                        else:
+                            if prev_offset[i] >= 0: #Update the vspace
+                                po = prev_offset[i]
+                                v = val_prev_poffset[i]
+                                is_matching = engine.matching_cells[i][prev_val-1][v-1]
+                                if v != 0 and is_matching: #If the value before the previous space match our current line, combine the vspace
+                                    tmp_vspaces[i][po] += count[i]
+                                else:
+                                    tmp_vspaces[i][po] = max(count[i], tmp_vspaces[i][po])
+                                prev_offset[i] = -1
+                                val_prev_poffset[i] = -1
+                            if count[i] - 1 >= 4:
+                                    count[i] = 4
+                            align[i][count[i] - 1] += 1
+                            count[i] = 1
+                        if count[i] == 4:
+                            align[i][3] += 1
+            prev_val = val
+            offset +=1
+
+
+        if prev_val > 0: #The previous value wasn't empty, so we need to count a line of size count[i]
+            for i in range(2):
+                if count[i] > 0:
+                    align[i][count[i]-1] += 1
+                    if prev_offset[i] >= 0:
+                            po = prev_offset[i]
+                            v = val_prev_poffset[i]
+                            is_matching = engine.matching_cells[i][prev_val-1][v-1]
+                            if v != 0 and is_matching: #If the value before the previous space match our current line, combine the vspace
+                                tmp_vspaces[i][po] += count[i]
+                            else:
+                                tmp_vspaces[i][po] = max(count[i], tmp_vspaces[i][po])
+
+        for i in range(2):
+            for j in range(offset):
+                x = x_start + j*x_offset_mul
+                y = y_start + j*y_offset_mul
+                idx = x*shape_board[1] + y
+                current_vspace = valuable_space[i][idx]
+                tmp_vspaces[i][j] = min(tmp_vspaces[i][j],4)
+                valuable_space[i][idx] = max(tmp_vspaces[i][j], current_vspace)
+
+    def heuristic(self, engine, weights, next_player):
+        board = engine.board
+        shape_board = engine.board.shape
+        prev_player = (next_player+1)%2; #It is a two player so we can do the +1 to get previous player.
+        valuable_space = [[0 for i in range(96)] for j in range(2)]
+        align = [[0 for i in range(10)] for j in range(2)]
+        valuable_space_count = [[0 for i in range(4)] for j in range(2)]
+        valuable_space_count_avail = [[0 for i in range(4)] for j in range(2)]
+        for col in range(shape_board[0]):
+            #Check column from (col, 0)
+            self.count_line(col, 0, 0, 1, board.flatten(), shape_board, align, valuable_space, engine)
+            #Check diagonal from (col, 0)
+            self.count_line(col, 0, 1, 1, board.flatten(), shape_board, align, valuable_space, engine)
+            #Check cdiagonal from (col, 0)
+            self.count_line(col, 0, -1, 1, board.flatten(), shape_board, align, valuable_space, engine)
+            if col > 0 and col < 7:
+                self.count_line(col, shape_board[1] - 1, -1, -1, board.flatten(), shape_board, align, valuable_space, engine)
+                self.count_line(col, shape_board[1] - 1,  1, -1, board.flatten(), shape_board, align, valuable_space, engine)
+
+        for row in range(shape_board[1]):
+            #Check row from (0, row)
+            self.count_line(0, row, 1, 0, board.flatten(), shape_board, align, valuable_space, engine)
+            if row > 7:
+                #Check diagonal from (0, row)
+                self.count_line(0, row, 1, -1, board.flatten(), shape_board, align, valuable_space, engine)
+                #Check cdiagonal from (shape_board[0]-1, row)
+                self.count_line(shape_board[0]-1, row, -1, -1, board.flatten(), shape_board, align, valuable_space, engine)
+
+        for i in range(2):
+            for y in range(shape_board[1]-1, -1, -1):
+                for x in range(shape_board[0]):
+                    val = valuable_space[i][x*shape_board[1]+y];
+                    if val > 0:
+                        if y - 2 < 0 or board[(x,y-2)] > 0:
+                            valuable_space_count_avail[i][val- 1] += 1
+                        else:
+                            valuable_space_count[i][val- 1] += 1
+        weight_align = weights[:4]
+        weight_vspace = weights[4:8]
+        weight_vspace_avail = weights[8:12]
+        values = [0, 0]
+        if align[prev_player][3] >= 1:
+            values[prev_player] += align[prev_player][3] * weight_align[3]
+        else:
+            for i in range(2):
+                for x in range(4):
+                    values[i] += weight_align[x] * align[i][x]
+                    values[i] += weight_vspace[x] * valuable_space_count[i][x]
+                    if i == next_player:
+                        xx = min(x+1, 3)
+                        values[i] += weight_align[xx] * valuable_space_count_avail[i][x]
+                    else:
+                        values[i] += weight_vspace_avail[x] * valuable_space_count_avail[i][x]
+        return values[0] - values[1]
+
     def value(self, id_ai, engine):
         id_next_ai = len(engine.previous_moves) % 2
-        val = magic.heuristic(engine.board, self.weights, engine.colors[id_next_ai])
+        val = self.heuristic(engine, self.weights, engine.colors[id_next_ai])
         if engine.colors[id_ai] == 1: #Our color is the dot
             val *= -1
         return val
