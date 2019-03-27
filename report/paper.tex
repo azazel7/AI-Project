@@ -29,6 +29,7 @@ project of \textit{Introduction to Artificial
 Intelligence} was developed. The first section
 covers the environment and the tools used for the
 project. The heuristic section describes each
+%TODO Briefly describe what a heuristic is.
 heuristic and how they were improved. The
 difficulties section summerizes the difficulties
 encountered during the project and how they were
@@ -89,7 +90,30 @@ heuristic against each other. Finally, a non
 tweaked MinMax version was developed for
 deliverable 2.
 
+\subsection{Tweaks in \textit{MinMax}}
+The original \textit{MinMax} algorithm explore the
+complete tree of possibilities and applies the
+heuristic function on the leaf. However, the
+heuristic functions described below do not take in
+account who won first. For instance, a sequence of
+move could be prefered if a player scores three
+line of four even if his opponent already won at
+the previous move with only one line of four.
+
+To prevent this behavior, the MinMax algorithm was
+tweaked to check for winning condition after
+playing each possible move at any depth. This
+modification prevent the exploration of game
+states already won by a player.
+
+Even though calling the winning function from the
+engine was costly at the beginning of the project,
+I managed to drastically reduce this time by
+improving the performances.
+
 \section{Heuristics}
+%TODO add citation to wikipedia for heuristics
+%TODO add importance of the heuristic in minmax
 Five heuristics were developed in this project
 even though only two were made for competitive
 use. One heuristic is the naive function for the
@@ -317,6 +341,7 @@ structures with space in the middle or above.
 
 \clearpage
 \subsection{Vspace}
+\label{sec:vspace}
 The goal of the Vspace heuristic is to give value to empty
 cells in addition to counting rows of similar
 symbols. Similarly to the previous heuristic,
@@ -489,8 +514,61 @@ can play on it on the next turn or not.
 \end{figure}
 \clearpage
 \section{Difficulties}
+\subsection{Slowness}
+The biggest difficulty encountered during this
+project was the slowness of python. In the early
+stage of the project, the code was
+too ineficient and could not check more than one
+move in advance within the limit of three seconds. 
+
+The \textit{cProfile} python module is a module
+that helps to profile python code. In particular,
+it give the amount of time spent in each function
+called. This profiler was used to locate the most
+time consumming function, then I rely on this information to
+restructure the code into better object structure.
+
+However, the result were hardly perceivable and
+the code was still too slow for competetive use.
+Therefore, I turn to two scientific python
+libraries: Numpy and Scipy. Using functions from
+these libraries slightly improved the performance
+because they were built-in functions. In python,
+built-in functions are C functions compiled into a
+python module and called from python script.
+
+Finally, to reach a decent executing time, 
+one more step was taken and a python module writen
+in C was developed.
+Figure~\ref{fig:performance-magic} show the
+evolution of the performances as the most time
+consuming function were adapted to call the
+module. However, the python code remains and it is
+executed by default. 
+Figure~\ref{fig:performance-magic} shows that the
+MinMax algorithm is able to check four moves in
+advance after half of the key part used the
+module.
+
+\begin{figure}
+		\includegraphics[width=\textwidth]{perfromances.png}
+		\caption{The amount of time (in second) taken
+		to run the MinMax algorithm on a board with the
+		card "5 B 1" already played. The MinMax
+		algorithm checked up to 4 moves in advance and
+		it used the Vspace heuristic described in
+		Section~\ref{sec:vspace}. The left column
+		shows the full python execution time (more
+		than 4 minutes) and the other columns show the
+		execution time as part of the code start using
+		the C module. The third column from the left,
+		"checking a move", indicate the time taken
+		when the heuristic function and the function
+		that check the moves use both the C module.}
+		\label{fig:performance-magic}
+\end{figure}
+
 \begin{itemize}
-		\item Slowness of python, (numpy first)
 		\item Version changing between Python 3.7.2 and 3.5.1 (serialization of regex)
 \end{itemize}
 \section{Analyze}
