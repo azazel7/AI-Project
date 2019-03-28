@@ -27,8 +27,7 @@ class MinMaxPlayer:
             self.sort_moves = sort_moves
         else:
             self.sort_moves = (int(sort_moves) == 1)
-        self.lili = 25
-        print(self.name, self.sort_moves)
+        self.lili = 25 #Width limitation when sorting.
 
     @timeit
     def play(self, id_ai, engine):

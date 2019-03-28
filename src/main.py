@@ -7,7 +7,7 @@ from random_player import RandomPlayer
 from min_max_player import MinMaxPlayer
 from demo_minmax import DemoMinMaxPlayer
 from monte_carlo import MonteCarloPlayer
-from heuristics import HeuristicConvolution, HeuristicNeuralNetwork, HeuristicBasic, HeuristicVspace, HeuristicRandom, HeuristicDemo
+from heuristics import HeuristicConvolution, HeuristicNeuralNetwork, HeuristicBasic, HeuristicVspace, HeuristicRandom, HeuristicDemo, HeuristicMuggleVspace
 from sklearn.metrics import accuracy_score
 import cProfile
 import pstats
@@ -65,8 +65,7 @@ def load_random_player(l):
     return RandomPlayer(*l)
 def load_vspace_heuristic(dm):
     if not dm:
-        print("Using vspace heuristic require dark magic.")
-        raise NameError("No dark magic")
+        return HeuristicMuggleVspace()
     return HeuristicVspace()
 
 #define the run functions
