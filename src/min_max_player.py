@@ -26,7 +26,9 @@ class MinMaxPlayer:
         if isinstance(sort_moves, bool):
             self.sort_moves = sort_moves
         else:
-            self.sort_moves = (sort_moves == 1)
+            self.sort_moves = (int(sort_moves) == 1)
+        self.lili = 25
+        print(self.name, self.sort_moves)
 
     @timeit
     def play(self, id_ai, engine):
@@ -88,7 +90,7 @@ class MinMaxPlayer:
         s = sum([mv.recycling for mv in moves])
         if self.sort_moves:
             value = [self.value_move(engine, mv, self.id_ai) for mv in moves]
-            moves = [mv[1] for mv in sorted(value, key=itemgetter(0), reverse=True) if mv[0] > -900000 ]
+            moves = [mv[1] for mv in sorted(value, key=itemgetter(0), reverse=True) if mv[0] > -900000 ][:self.lili]
 
         best_val = -100000
         best_move = None
@@ -132,7 +134,7 @@ class MinMaxPlayer:
         if self.sort_moves:
             value = [self.value_move(engine, mv, self.id_ai) for mv in moves]
             best_opponent = min([mv[0] for mv in value])
-            moves = [mv[1] for mv in sorted(value, key=itemgetter(0), reverse=True)]
+            moves = [mv[1] for mv in sorted(value, key=itemgetter(0), reverse=True)][:self.lili]
 
         #Does the TA or the teacher of AI read this comment?
 
