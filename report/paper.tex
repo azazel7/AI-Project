@@ -6,6 +6,8 @@
 %
 \usepackage{graphicx}
 \usepackage{tikz}
+\usepackage{subcaption}
+\captionsetup{compatibility=false}
 \usetikzlibrary{matrix}
 % Used for displaying a sample figure. If possible, figure files should
 % be included in EPS format.
@@ -16,7 +18,7 @@
 
 \begin{document}
 %
-\title{COMP 6721: Project Report}
+\title{COMP 6721: Double Card}
 \author{Martin Khannouz}
 %
 \institute{40093517 \email{martin.khannouz@gmail.com}}
@@ -31,7 +33,7 @@ covers the environment and the tools used for the
 project. The heuristic section describes each
 %TODO Briefly describe what a heuristic is.
 heuristic and how they were improved. The
-difficulties section summerizes the difficulties
+difficulties section summarizes the difficulties
 encountered during the project and how they were
 overcome.
 
@@ -46,29 +48,29 @@ deliverable to ensure the project worked with the
 software version on Concordia's computers. Pytest
 was used to guarantee no regression has been made.
 
-\subsection{stucture}
+\subsection{Stucture}
 The project is structured in classes with
-the main one representating the engine. This class is an
+the main one representing the engine. This class is an
 instance of the game and implements the rules.
 To ensure this class operates properly, unit tests
 were implemented before the class methods, based on
 the use cases given by the teacher.
 This class was optimized as much as possible to
-guarantee the fastest execution time for minimax
-algorithm.
+guarantee the fastest execution time for
+\textit{MinMax} algorithm.
 
-The project also contains three type of players. A
+The project also contains three types of players. A
 \textit{Human} player that parse the input from the command
 line. A \textit{MinMax} player that implement tweaked
 minimax version with alpha-beta pruning. The
 \textit{MonteCarlo} player which was supposed to implement
 a Monte Carlo Tree Search even though it was a
-complete failure due to the poor understanding of
-this algorithm by the author of the project. Finally, a random player was
+complete failure due to my poor understanding of
+this algorithm. Finally, a random player was
 developed during the early stage of the project.
-This "algorithm" served as control test for other
-player types, because none of them should lost
-against such chaotic player\footnote{Based on my
+This "algorithm" served as a control test for other
+player types because none of them should lose
+against such a chaotic player\footnote{Based on my
 statistics, even a 5-years old kid should get a
 win rate of 50\%.}.
 
@@ -82,28 +84,28 @@ that could be played.
 In addition to these classes, additional functions
 were implemented. One function used genetic
 algorithms to optimize the \textit{Vspace}
-heuristic, but it was too slow and just gave hint
-on how to enhance the heuristic rather than a
+heuristic, but it was too slow and just gave a hint
+of how to enhance the heuristic rather than
 accurate weights.  A win rate function was also
 implemented to compare combinations of player and
-heuristic against each other. Finally, a non
-tweaked MinMax version was developed for
+heuristic against each other. Finally, a
+non-tweaked MinMax version was developed for
 deliverable 2.
 
 \subsection{Tweaks in \textit{MinMax}}
-The original \textit{MinMax} algorithm explore the
+The original \textit{MinMax} algorithm explores the
 complete tree of possibilities and applies the
 heuristic function on the leaf. However, the
-heuristic functions described below do not take in
-account who won first. For instance, a sequence of
-move could be prefered if a player scores three
-line of four even if his opponent already won at
-the previous move with only one line of four.
+heuristic functions described below do not take
+into account who won first. For instance, a sequence of
+move could be preferred if a player scores three
+lines of four symbols even if his opponent already won at
+the previous move.
 
 To prevent this behavior, the MinMax algorithm was
 tweaked to check for winning condition after
 playing each possible move at any depth. This
-modification prevent the exploration of game
+modification prevents the exploration of game
 states already won by a player.
 
 Even though calling the winning function from the
@@ -111,6 +113,25 @@ engine was costly at the beginning of the project,
 I managed to drastically reduce this time by
 improving the performances.
 
+To prevent exceeding the six-second limit, a timer
+was added in the MinMax algorithm. If this limit
+was reached, the algorithm stops and returns the
+best move encountered until this time.
+
+The \textit{MinMax} algorithm contains a parameter
+to sort the moves at each level. This approach was
+supposed to prune the state space faster. At the
+beginning of the project, this sort improved
+significantly the performance, but on later
+versions of the heuristics, it slowed the algorithm.
+Therefore, it was barely used nor study.
+
+Finally, when the algorithm runs on an empty
+board, it returns a random vertical move. A
+vertical move because the heuristics appear to
+have a better winning rate when they start with
+this move type. The move was randomly picked to
+explore openings and to bring small changes from one game to another.
 \section{Heuristics}
 %TODO add citation to wikipedia for heuristics
 %TODO add importance of the heuristic in minmax
@@ -118,16 +139,16 @@ Five heuristics were developed in this project
 even though only two were made for competitive
 use. One heuristic is the naive function for the
 second deliverable. Another is a random heuristic
-that systematicaly return a new random number. It
+that systematically returns a new random number. It
 was used to spot runtime errors in \textit{MinMax} and
 \textit{MonteCarlo} algorithms. The \textit{Basic}
-heuristics only check for winning situation and
+heuristics only check for winning situations and
 was used for basic controls.
 The two other heuristics are described in
-subsection of their own.
+subsections of their own.
 
 \subsection{Convolution}
-The convolution utilize the \textit{convolve2d} function
+The convolution utilizes the \textit{convolve2d} function
 from Scipy to estimate the value of a current
 state.
 The game board is split into two matrices: dot and
@@ -140,7 +161,7 @@ produces new matrices with values that range from
 -4 to 4. A cell with an absolute value of four indicates a row
 of four and therefore, a winning position.
 The heuristic gathers all intermediate values into
-an histogram (using the \textit{histogram}
+a histogram (using the \textit{histogram}
 function of numpy) then give a weight to each
 value. For instance, a weight of 16 was given to
 each intermediate value of 3 which represent a row
@@ -148,30 +169,30 @@ of three.
 
 Figure~\ref{fig:board-example} shows an example of
 the board. Figure~\ref{fig:dot-representation}
-focus on the dot player and show the
+focuses on the dot player and show the
 transformation applied to the board for this
 player. Filled dots are set to 1 and circles to
 -1. Zeros are not represented for more clarity.
 The heuristic applies four convolutions: one for
 the rows, another for the columns and one for each
-diagonal. These convolution generate four smaller
+diagonal. These convolutions generate four smaller
 matrices showed in
 Figure~\ref{fig:convolution-results} (left side).
-The matrices are then flatened, concateneted and the
-absolute value is applied to every cell. Finally
+The matrices are then flattened, concatenated and the
+absolute value is applied to every cell. Finally,
 the histogram is built out of this matrix and each
 element is multiplied by a weight before being
 summed.  The final
 value of the board is the difference between the
 two player values.
 
-This approach is strong for many reason. It is
+This approach is strong for many reasons. It is
 faster than calling python code because Scipy and
-Numpy rely on C writen functions. Uncomplete rows
-that contain zeros are more valued than uncomplete
+Numpy rely on C written functions. Incomplete rows
+that contain zeros are more valued than incomplete
 rows that contain opposite values. Finally,
 because the convolution mask is applied to empty
-spaces, the heuristic can build complexe
+spaces, the heuristic can build complex
 structures with space in the middle or above.
 
 \begin{figure}[ht]
@@ -335,7 +356,7 @@ structures with space in the middle or above.
 				\draw [->,thick] (C1) -- (H0);
 		\end{tikzpicture}
 		\caption{The four matrices obtained after applying the four masks on the matrix that represent the dot, in Figure~\ref{fig:dot-representation}.
-						This Figure also represents the conversion to an histogram and how this histogram is used to find the heuristic value for the dot player.}
+						This Figure also represents the conversion to a histogram and how this histogram is used to find the heuristic value for the dot player.}
 		\label{fig:convolution-results}
 \end{figure}
 
@@ -345,7 +366,7 @@ structures with space in the middle or above.
 The goal of the Vspace heuristic is to give value to empty
 cells in addition to counting rows of similar
 symbols. Similarly to the previous heuristic,
-Vspace count the size of the lines, but for every
+\textit{Vspace} counts the size of the lines, but for every
 line connected to an empty cell, it uses the
 size of this line as a value for the empty cell.
 
@@ -355,7 +376,7 @@ how the spaces are valued for both players, based
 on the board at Figure~\ref{fig:board-example}.
 Figure~\ref{fig:color-vspace} shows that even if
 the line is split in two with an empty cell in the
-middle, the combine value of both side gives the
+middle, the combined value of both side gives the
 value of the space. This is the reason why the two
 3-values appears even though there is no line of
 three.
@@ -364,15 +385,15 @@ Possible value for spaces range from 0 to 4 and
 higher values are downed to 4. When multiple lines
 are connected to an empty cell, the cell receives
 the maximum value from them. The heuristic split the
-space in two categories: the space available in
-the next turn and the spaces too high to be reach
-with one card.
+space into two categories: the space available in
+the next turn and the spaces too high to be
+reached with one card.
 
-Finally, an histogram for each category is made and
+Finally, a histogram for each category is made and
 each value is multiplied by a weight then summed.
 Note that the two categories have different
-weights, because a space connected to a line of
-three symboles does not hold the same value if you
+weights because a space connected to a line of
+three symbols does not hold the same value if you
 can play on it on the next turn or not.
 \begin{figure}[ht]
 		\center
@@ -512,37 +533,52 @@ can play on it on the next turn or not.
 		cards to be filled.}
 		\label{fig:color-vspace}
 \end{figure}
+
+The default weights of \textit{Vspace} were hinted
+by a genetic algorithm~\cite{genetic}. The DEAP~\cite{deap}
+library was used to improve the initial weights
+which were a simple guess.  New weights would
+compete against a \textit{Vspace} heuristic with
+the original weights and the winning rate was used
+to evaluate them. In case the winning rate was
+zero, the new canditates were sorted by the
+average length of their game: the longer, the
+better. After a night of simulation, the results
+indicate that lines should not be counted except
+for lines of four symbols.  This change,
+greatly improved the winning rate of
+\textit{Vspace}.
+
 \clearpage
 \section{Difficulties}
-\subsection{Slowness}
 The biggest difficulty encountered during this
 project was the slowness of python. In the early
 stage of the project, the code was
-too ineficient and could not check more than one
+too inefficient and could not check more than one
 move in advance within the limit of three seconds. 
 
-The \textit{cProfile} python module is a module
-that helps to profile python code. In particular,
-it give the amount of time spent in each function
+\textit{cProfile}~\cite{cprofile} is a module to profile
+python code. In particular,
+it gives the amount of time spent in each function
 called. This profiler was used to locate the most
-time consumming function, then I rely on this information to
-restructure the code into better object structure.
+time-consuming function, then this information
+helps to restructure the code and enhance the
+performance.
 
-However, the result were hardly perceivable and
-the code was still too slow for competetive use.
-Therefore, I turn to two scientific python
-libraries: Numpy and Scipy. Using functions from
-these libraries slightly improved the performance
-because they were built-in functions. In python,
-built-in functions are C functions compiled into a
-python module and called from python script.
+However, the results were hardly perceivable and
+the code remains slow even with the later use of
+optimized python libraries (Numpy and Scipy
+\cite{numpy}). Functions from these libraries rely
+on built-in functions which are written in C, then
+compiled into python module.  Therefore, the use
+of this type of function should improve the speed
+of the engine.
 
-Finally, to reach a decent executing time, 
-one more step was taken and a python module writen
-in C was developed.
-Figure~\ref{fig:performance-magic} show the
-evolution of the performances as the most time
-consuming function were adapted to call the
+However, none of the approaches above provide significant improvement. Finally,
+to reach a decent executing time for the tournament, one last step was taken
+and a python module written in C was developed.
+Figure~\ref{fig:performance-magic} shows the
+evolution of the performances as the most time-consuming function given by \textit{cProfile} were adapted to call the
 module. However, the python code remains and it is
 executed by default. 
 Figure~\ref{fig:performance-magic} shows that the
@@ -551,11 +587,12 @@ advance after half of the key part used the
 module.
 
 \begin{figure}
-		\includegraphics[width=\textwidth]{perfromances.png}
-		\caption{The amount of time (in second) taken
+		\centering
+		\includegraphics[width=0.8\textwidth]{perfromances.png}
+		\caption{The amount of time (in seconds) taken
 		to run the MinMax algorithm on a board with the
 		card "5 B 1" already played. The MinMax
-		algorithm checked up to 4 moves in advance and
+		algorithm checked up to four moves in advance and
 		it used the Vspace heuristic described in
 		Section~\ref{sec:vspace}. The left column
 		shows the full python execution time (more
@@ -568,93 +605,147 @@ module.
 		\label{fig:performance-magic}
 \end{figure}
 
-\begin{itemize}
-		\item Version changing between Python 3.7.2 and 3.5.1 (serialization of regex)
-\end{itemize}
+\clearpage
 \section{Analyze}
-\begin{itemize}
-		\item How is the pruning depth 3 with a
-				recycling moves: no prun = 26s, prun=0.3s.
-		\item How are the performance at the tournament.
-\end{itemize}
+This section presents three analyses. A comparison
+between the two heuristics; a brief  overview of
+the alpha-beta pruning impact; and an experiment
+where the branching factor is limited in order to
+go deeper.
 
-\section{A Subsection Sample}
-Please note that the first paragraph of a section or subsection is
-not indented. The first paragraph that follows a table, figure,
-equation etc. does not need an indent, either.
+Before exploring these analyses, a brief
+explanation about winning rate tables. When two
+heuristics/algorithms are compared, two situations
+are considered: one algorithm
+play first in the first situation then the roles
+are inverted in the next situation. A quick experiment with the
+same algorithm and the same heuristic showed that
+the winning rate is higher for the second player.
+Therefore, we need to compare two situations.
 
-Subsequent paragraphs, however, are indented.
+\subsection{Heuristic comparison}
+In this section, we compare the efficiency between
+the two heuristics. Table~\ref{tab:win-heuristic}
+shows the winning rate of each heuristic out of 20
+games. \textit{Vspace} is used with a depth of
+four (four moves in advance) while the convolution
+only uses a depth of three. This difference in
+depth appears because the \textit{Vspace}
+heuristic is more optimized. Both heuristics are
+used by the tweaked \textit{MinMax} algorithm described
+above.
 
-\subsubsection{Sample Heading (Third Level)} Only two levels of
-headings should be numbered. Lower level headings remain unnumbered;
-they are formatted as run-in headings.
+The first row of Table~\ref{tab:win-heuristic}
+indicates that the \textit{Vspace} heuristic wins
+70 \%  of the game when it starts to play while the
+convolution heuristic wins the other 30 \%.
+From this table, we see that the Vspace heuristic
+performs better because it also wins all games
+when the convolution heuristic plays first.
 
-\paragraph{Sample Heading (Fourth Level)}
-The contribution should contain no more than four levels of
-headings. Table~\ref{tab1} gives a summary of all heading levels.
+To investigate the efficiency of the heuristic
+rather than the combination of its performance and
+efficiency, the previous experiment was redone
+with both heuristics using the same depth.
+Table~\ref{tab:win-heuristic-same} shows the
+winning ratio for this second experiment. We
+denote that the \textit{Vspace} heuristic is more
+efficient than the convolution. 
 
 \begin{table}
-\caption{Table captions should be placed above the
-tables.}\label{tab1}
-\begin{tabular}{|l|l|l|}
-\hline
-Heading level &  Example & Font size and style\\
-\hline
-Title (centered) &  {\Large\bfseries Lecture Notes} & 14 point, bold\\
-1st-level heading &  {\large\bfseries 1 Introduction} & 12 point, bold\\
-2nd-level heading & {\bfseries 2.1 Printing Area} & 10 point, bold\\
-3rd-level heading & {\bfseries Run-in Heading in Bold.} Text follows & 10 point, bold\\
-4th-level heading & {\itshape Lowest Level Heading.} Text follows & 10 point, italic\\
-\hline
-\end{tabular}
+	\begin{subtable}{0.5\textwidth}
+		\centering
+		\caption{Optimal depth}\label{tab:win-heuristic}
+		\begin{tabular}{|l|l|l|}
+		\hline
+		First player &  Vspace & Convolution\\
+		\hline
+		 Vspace 		 &  70 \% & 30 \%\\
+		 Convolution &  100 \% & 0 \%\\
+		\hline
+		\end{tabular}
+	\end{subtable}
+	\begin{subtable}{0.49\textwidth}
+		\centering
+		\caption{Same depth}\label{tab:win-heuristic-same}
+		\begin{tabular}{|l|l|l|}
+		\hline
+		First player &  Vspace & Convolution\\
+		\hline
+		 Vspace 		 &  55 \% & 45 \%\\
+		 Convolution &  100 \% & 0 \%\\
+		\hline
+		\end{tabular}
+	\end{subtable}
+	\caption{Shows the winning ratio between the two
+		heuristics. On the left, both heuristics use
+		the maximum depth they could reach. On the
+		right, they use the same depth (three moves
+		in advance). The column \textit{First player}
+		indicates which heuristic is playing first.}
+\end{table}
+
+\subsection{Alpha-Beta}
+The impact of Alpha-Beta pruning is important. A
+quick experiment with the \textit{Vspace}
+heuristic on depth 4 showed that the alpha-beta
+pruning speed-up the algorithm by a factor of 26
+(from 43 seconds to 1.6 seconds). The efficiency
+of the pruning is also seen in the number of time the
+heuristic function is called: 90000 calls with the
+pruning and more than 4 million without.
+Therefore, we can conclude that the Alpha-Beta
+pruning is a key element of the \textit{MinMax}.
+
+\subsection{Limiting the width}
+During the tournament, I heard that a team added a
+limitation in width in addition to the depth
+limitation.
+Therefore, I decided to evaluate this idea in my
+own project. I design a new version of the MinMax
+algorithm where at the beginning of each function
+(\textit{min} and \textit{max}) each move is rated
+with the heuristic and only the 25 best are
+explored. This modification fixed the branching
+factor at 25 and allows the algorithm to go
+one level deeper. The factor of 25 was choosen
+because it allows going just one level deeper
+within the time limit while still exploring many
+moves.
+
+Table~\ref{tab:win-limit-width} shows the win rate
+between the \textit{MinMax} with unlimited width
+and the one with a branching factor of 25. The Table
+reveals that the limited search with one level
+deeper has a poor winning rate whether it starts
+to play or not.
+Therefore, in this project with the
+\textit{Vspace} heuristic, limiting the width is inefficient
+and does not give an advantage.
+\begin{table}
+		\centering
+		\caption{Win ratio when the width is limited.}\label{tab:win-limit-width}
+		\begin{tabular}{|l|l|l|}
+		\hline
+		First player &  Limited & Unlimited\\
+		\hline
+		 Limited &  0 \% & 100 \%\\
+		 Unlimited &  35 \% & 65 \%\\
+		\hline
+		\end{tabular}
 \end{table}
 
 
-\noindent Displayed equations are centered and set on a separate
-line.
-\begin{equation}
-x + y = z
-\end{equation}
-Please try to avoid rasterized images for line-art diagrams and
-schemas. Whenever possible, use vector graphics instead (see
-Fig.~\ref{fig1}).
-
-\begin{figure}
-\includegraphics[width=\textwidth]{fig1.eps}
-\caption{A figure caption is always placed below the illustration.
-Please note that short captions are centered, while long ones are
-justified by the macro package automatically.} \label{fig1}
-\end{figure}
-
-\begin{theorem}
-This is a sample theorem. The run-in heading is set in bold, while
-the following text appears in italics. Definitions, lemmas,
-propositions, and corollaries are styled the same way.
-\end{theorem}
-%
-% the environments 'definition', 'lemma', 'proposition', 'corollary',
-% 'remark', and 'example' are defined in the LLNCS documentclass as well.
-%
-\begin{proof}
-Proofs, examples, and remarks have the initial word in italics,
-while the following text appears in normal font.
-\end{proof}
-For citations of references, we prefer the use of square brackets
-and consecutive numbers. Citations using labels or the author/year
-convention are also acceptable. The following bibliography provides
-a sample reference list with entries for journal
-articles~\cite{ref1}, an LNCS chapter~\cite{ref2}, a
-book~\cite{ref1}, proceedings without editors~\cite{ref1},
-and a homepage~\cite{ref_2}. Multiple citations are grouped
-\cite{ref1,ref2}.
-% ---- Bibliography ----
-%
-% BibTeX users should specify bibliography style 'splncs04'.
-% References will then be sorted and formatted in the correct style.
-%
-% \bibliographystyle{splncs04}
-% \bibliography{mybibliography}
-%
+\section{Conclusion}
+This project taught me many things about AI
+programming for two player game. It showed me how
+the weight of a heuristic can be optimized. It
+proved me that going deeper in the state tree
+is not the better option if all possibilities are
+not properly explored. Finally, I learned to program python
+module and to combine the performance of C with
+the simplicity of python when performances are
+required.
 \bibliographystyle{splncs04}
 \bibliography{paper}
 \end{document}
